@@ -7,10 +7,14 @@ Issue templates: Task (work items) and Bug report (reversions get flagged here �
 Status key: ☐ not started · ◐ partially done · ☑ done · ❌ blocked (note why)
 
 ## M0 — Scaffold
-- ☐ Tauri 2 + SvelteKit shell builds and opens empty window (Win/macOS)
-- ☐ Python sidecar launches from Tauri, loopback port handshake, graceful shutdown
-- ☐ `/health` endpoint reporting device capabilities (CUDA/VRAM/CPU cores)
-- ☐ Settings persistence layer (frontend store ↔ disk JSON)
+- ☑ Tauri 2 + SvelteKit shell builds and opens empty window (Win/macOS)
+  *Verified: `cargo check` exit 0 (Win), `vite build` static bundle OK, placeholder icon generated. Full `npm run tauri build` installer pass still owed before tagging m0.*
+- ◐ Python sidecar launches from Tauri, loopback port handshake, graceful shutdown
+  *Code complete (`src-tauri/src/lib.rs`: venv detection, random port, health-wait emit `sidecar-ready`, RunEvent::Exit kill). Backend verified standalone via uvicorn smoke test; the Tauri-spawned path needs one manual `npm run tauri dev` confirmation.*
+- ☑ `/health` endpoint reporting device capabilities (CUDA/VRAM/CPU cores)
+  *Verified live: returns engines map + devices info; degrades to `status:"degraded"` when models absent.*
+- ☑ Settings persistence layer (basic: localStorage via `appState.svelte.ts`; swap to Tauri fs plugin when it lands)
+
 
 ## M1 — Batch transcription MVP
 - ☐ `audio_preprocess`: RMS normalize → trim → optional RNNoise, unit tests

@@ -4,16 +4,15 @@
 //! random loopback port. The port is surfaced to the UI through the
 //! `sidecar_port` command so src/lib/api.ts can target it (no fixed ports).
 
-use std::io::{BufRead, BufReader};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 
 struct SidecarState(Mutex<Option<Child>>);
 
 #[tauri::command]
 fn sidecar_port() -> Option<u16> {
-    PORT.get()
+    PORT.get().copied()
 }
 
 static PORT: std::sync::OnceLock<u16> = std::sync::OnceLock::new();
@@ -74,7 +73,7 @@ fn spawn_sidecar(app: &tauri::AppHandle) -> Option<Child> {
         tauri::async_runtime::spawn(async move {
             let url = format!("http://127.0.0.1:{port}/health");
             for _ in 0..30 {
-                if reqwest_get_ok(&url) {
+                if http_probe_ok(&url) {
                     let _ = PORT.set(port);
                     let _ = handle.emit("sidecar-ready", port);
                     return;
@@ -87,16 +86,17 @@ fn spawn_sidecar(app: &tauri::AppHandle) -> Option<Child> {
     child
 }
 
-// Minimal HTTP probe without adding reqwest dependency weight.
-fn reqwest_get_ok(url: &str) -> bool {
-    std::process::Command::new(if cfg!(windows) { "powershell" } else { "curl" })
-        .args(if cfg!(windows) {
-            vec!["-NoProfile", "-Command",
-                 &format!("try {{ (Invoke-WebRequest -UseBasicParsing -Uri '{url}' -TimeoutSec 2).StatusCode -eq 200 }} catch {{ $false }}")]
-        } else {
-            vec!["-sf", url]
-        })
-        .creation_flags_hide_window()
+// Minimal HTTP probe without adding an HTTP client dependency.
+fn http_probe_ok(url: &str) -> bool {
+    let mut cmd = Command::new(if cfg!(windows) { "powershell" } else { "curl" });
+    if cfg!(windows) {
+        let script =
+            format!("try {{ (Invoke-WebRequest -UseBasicParsing -Uri '{url}' -TimeoutSec 2).StatusCode -eq 200 }} catch {{ $false }}");
+        cmd.args(["-NoProfile", "-Command", script.as_str()]);
+    } else {
+        cmd.args(["-sf", url]);
+    }
+    cmd.creation_flags_hide_window()
         .status()
         .map(|s| s.success())
         .unwrap_or(false)
@@ -122,31 +122,32 @@ async fn tokio_sleep(dur: std::time::Duration) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let handle = app.handle().clone();
             match spawn_sidecar(&handle) {
                 Some(child) => {
-                    app.manage(SidecarState(Mutex::new(Some(child))));
+                    app.handle().manage(SidecarState(Mutex::new(Some(child))));
                 }
                 None => eprintln!("WARNING: no python found; running without transcription backend"),
             }
 
-            // Graceful shutdown: kill the sidecar when the window closes.
-            let handle2 = app.handle().clone();
-            app.on_window_event(move |_window, event| {
-                if matches!(event, tauri::WindowEvent::Destroyed) {
-                    if let Some(state) = handle2.try_state::<SidecarState>() {
-                        if let Ok(mut guard) = state.0.lock() {
-                            if let Some(child) = guard.as_mut() {
-                                let _ = child.kill();
-                            }
-                        }
-                    }
-                }
-            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![sidecar_port])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            // Graceful shutdown: kill the sidecar when the app exits (workflow doc:
+            // sidecar lifecycle lives here so child processes never outlive the UI).
+            if matches!(event, tauri::RunEvent::Exit) {
+                if let Some(state) = app_handle.try_state::<SidecarState>() {
+                    if let Ok(mut guard) = state.0.lock() {
+                        if let Some(child) = guard.as_mut() {
+                            let _ = child.kill();
+                        }
+                    }
+                }
+            }
+        });
 }

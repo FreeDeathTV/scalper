@@ -1,6 +1,8 @@
 # --- build / dev artifacts ---
 node_modules/
 dist/
+build/
+.svelte-kit/
 backend/.venv/
 __pycache__/
 *.py[cod]
@@ -8,6 +10,7 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 target/
+src-tauri/gen/
 
 # --- never commit secrets or models (workflow §6) ---
 .env

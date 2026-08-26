@@ -3,5 +3,5 @@
 	"identifier": "default",
 	"description": "Default window permissions for the transcription shell",
 	"windows": ["main"],
-	"permissions": ["core:default"]
+	"permissions": ["core:default", "dialog:default"]
 }

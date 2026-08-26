@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { downloadTranscript } from './exportUtils';
 	import { appState } from '$lib/stores/appState.svelte';
-	import type { TranscriptDocument } from '$lib/types/ipc';
 
 	const doc = $derived(appState.transcript);
 
