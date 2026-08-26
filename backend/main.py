@@ -42,6 +42,7 @@ from ipc.schemas import (
 from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
+logger = logging.getLogger("main")
 
 app = FastAPI(title="scalper-transcriber-backend", version="0.1.0")
 
@@ -83,10 +84,13 @@ def _spawn_batch(file_path: str, settings: Settings) -> str:
             doc = await pipeline.run_batch(req, bus)
             _DOCS[ext_id] = doc.model_dump(mode="json")
         except Exception:
-            pass  # status already published as stage="error"
+            # surface in server logs so errors aren't silently invisible;
+            # the bus already carries a stage="error" JobStatus for the UI.
+            logger.exception("batch %s failed for %s", ext_id, file_path)
 
     task = asyncio.create_task(runner())
     _TASKS[id(task)] = task
+    return ext_id
     # NOTE(m1): run_batch emits its own internal session id on the bus; progress
     # consumers listen on '*' today. Unify ids when cancellation is wired (M1).
     return ext_id
@@ -178,7 +182,16 @@ async def ws_live(ws: WebSocket) -> None:
     live_job = f"live-{session_id}"
 
     async def transcribe(start: float, end: float, chunk: np.ndarray) -> None:
-        result = await asyncio.to_thread(engine.transcribe_chunk, chunk, start, end, settings)
+        try:
+            result = await asyncio.to_thread(
+                engine.transcribe_chunk, chunk, start, end, settings
+            )
+        except Exception as exc:  # noqa: BLE001 — a bad utterance must not kill the session
+            logger.warning("live utterance %s..%s failed: %s", start, end, exc)
+            bus.publish(
+                JobStatus(job_id=live_job, stage="error", message=f"transcription failed: {exc}")
+            )
+            return
         if not result.text.strip():
             return
         bus.publish(
