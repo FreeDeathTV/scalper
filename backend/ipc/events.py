@@ -14,13 +14,10 @@ def compute_overall(stage: str, stage_progress: float) -> float:
     done_weight = sum(
         w
         for s, w in STAGE_WEIGHTS.items()
-        if s not in ("done", "error", "cancelled")
-        and _stage_index(s) < _stage_index(stage)
+        if s not in ("done", "error", "cancelled") and _stage_index(s) < _stage_index(stage)
     )
     current = STAGE_WEIGHTS.get(stage, 0.0) * stage_progress
-    total = sum(
-        w for s, w in STAGE_WEIGHTS.items() if s not in ("done", "error", "cancelled")
-    )
+    total = sum(w for s, w in STAGE_WEIGHTS.items() if s not in ("done", "error", "cancelled"))
     value = (done_weight + current) / total if total else stage_progress
     return round(min(max(value, 0.0), 1.0), 4)
 
@@ -64,9 +61,7 @@ class EventBus:
             for q in list(self._queues.get(key, ())):
                 try:
                     q.put_nowait(status)
-                except (
-                    asyncio.QueueFull
-                ):  # slow consumer: drop oldest semantics are fine
+                except asyncio.QueueFull:  # slow consumer: drop oldest semantics are fine
                     pass
 
     async def stream(self, job_id: str = "*") -> AsyncIterator[JobStatus]:

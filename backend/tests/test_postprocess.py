@@ -1,7 +1,6 @@
 """Spec §7 quality guards: repetition collapse, confidence floor, vocab replacement."""
 
 import pytest
-
 from core import postprocess
 from ipc.schemas import TranscriptDocument, TranscriptSegment, TranscriptWord
 

@@ -33,9 +33,7 @@ def load_vad_model(model_path: str | None = None) -> Any:
     try:
         import onnxruntime as ort
 
-        candidate = (
-            Path(model_path) if model_path is not None else _default_model_path()
-        )
+        candidate = Path(model_path) if model_path is not None else _default_model_path()
         if not candidate.exists():
             return None
         return ort.InferenceSession(str(candidate), providers=["CPUExecutionProvider"])
@@ -44,9 +42,7 @@ def load_vad_model(model_path: str | None = None) -> Any:
 
 
 def _default_model_path() -> Path:
-    local = (
-        Path(__file__).resolve().parent.parent / "tests" / "models" / "silero_vad.onnx"
-    )
+    local = Path(__file__).resolve().parent.parent / "tests" / "models" / "silero_vad.onnx"
     return local if local.exists() else Path("silero_vad.onnx")
 
 

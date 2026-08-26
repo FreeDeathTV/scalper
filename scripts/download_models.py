@@ -22,6 +22,12 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 MANIFEST = REPO / "docs" / "MODEL_MANIFEST.json"
 
+# Stock Windows consoles default to cp1252 and crash on our progress glyphs
+# (↓ ✓ ✗). Force UTF-8 output; errors="replace" keeps even exotic locales alive.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 
 def sha256_of(path: Path) -> str:
     h = hashlib.sha256()
@@ -56,9 +62,7 @@ def main() -> int:
     args = ap.parse_args()
 
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    models_dir = args.models_dir or (
-        Path.home() / ".scalper" / "models"
-    )
+    models_dir = args.models_dir or (Path.home() / ".scalper" / "models")
     failures = 0
 
     for entry in manifest["tiers"].get(args.tier, []):

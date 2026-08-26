@@ -29,9 +29,7 @@ def resample_to_16k(audio: np.ndarray, sr_in: int) -> np.ndarray:
         import librosa
 
         return np.asarray(
-            librosa.resample(
-                audio.astype(np.float32), orig_sr=sr_in, target_sr=TARGET_SAMPLE_RATE
-            ),
+            librosa.resample(audio.astype(np.float32), orig_sr=sr_in, target_sr=TARGET_SAMPLE_RATE),
             dtype=np.float32,
         )
     except ImportError:
@@ -43,9 +41,7 @@ def rms_dbfs(audio: np.ndarray) -> float:
     return 20 * np.log10(rms) if rms > 0 else -120.0
 
 
-def normalize_rms(
-    audio: np.ndarray, target_dbfs: float = TARGET_RMS_DBFS
-) -> np.ndarray:
+def normalize_rms(audio: np.ndarray, target_dbfs: float = TARGET_RMS_DBFS) -> np.ndarray:
     """RMS-normalize to target level with a gain ceiling (spec §2)."""
     if audio.size == 0:
         return audio
@@ -102,13 +98,9 @@ def denoise(audio: np.ndarray) -> np.ndarray:
             if len(chunk) == 480
         ]
         remainder_len = len(audio) % 480
-        tail = (
-            audio[-remainder_len:] if remainder_len else np.empty(0, dtype=np.float32)
-        )
+        tail = audio[-remainder_len:] if remainder_len else np.empty(0, dtype=np.float32)
         return (
-            np.concatenate([np.concatenate(chunks), tail]).astype(np.float32)
-            if chunks
-            else audio
+            np.concatenate([np.concatenate(chunks), tail]).astype(np.float32) if chunks else audio
         )
     except ImportError:
         return audio

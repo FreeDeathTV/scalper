@@ -79,8 +79,7 @@ def apply_vocabulary(
         for seg in doc.segments:
             seg.text = pattern.sub(replace, seg.text)
             seg.words = [
-                w.model_copy(update={"text": pattern.sub(replace, w.text)})
-                for w in seg.words
+                w.model_copy(update={"text": pattern.sub(replace, w.text)}) for w in seg.words
             ]
     doc.vocabulary_applied = sorted(set(applied))
     return doc, doc.vocabulary_applied
@@ -101,13 +100,9 @@ def restore_punctuation_casing(doc: TranscriptDocument) -> TranscriptDocument:
     return doc
 
 
-def drop_runt_segments(
-    doc: TranscriptDocument, min_speech_s: float = 0.25
-) -> TranscriptDocument:
+def drop_runt_segments(doc: TranscriptDocument, min_speech_s: float = 0.25) -> TranscriptDocument:
     """Segments shorter than VAD min_speech are dropped entirely (spec §7.3)."""
-    doc.segments = [
-        s for s in doc.segments if (s.end - s.start) >= min_speech_s or s.words
-    ]
+    doc.segments = [s for s in doc.segments if (s.end - s.start) >= min_speech_s or s.words]
     return doc
 
 

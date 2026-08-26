@@ -5,9 +5,9 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+from ipc.schemas import Settings
 
 from ..transcriber import AsrChunkResult, resolve_ladder
-from ipc.schemas import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,7 @@ class FasterWhisperEngine:
                 logger.info("loaded %s (%s)", model_size, compute_type)
                 return
             except Exception as exc:  # step down the ladder (spec §6.3)
-                logger.warning(
-                    "failed to load %s/%s: %s", model_size, compute_type, exc
-                )
+                logger.warning("failed to load %s/%s: %s", model_size, compute_type, exc)
                 last_error = exc
         raise RuntimeError(f"could not load any model configuration: {last_error}")
 
@@ -65,9 +63,7 @@ class FasterWhisperEngine:
         if self._model is None:
             raise RuntimeError("engine.load() must complete before transcribe_chunk()")
         initial_prompt = (
-            " ".join(settings.custom_vocabulary[:20])
-            if settings.custom_vocabulary
-            else None
+            " ".join(settings.custom_vocabulary[:20]) if settings.custom_vocabulary else None
         )
         segments, info = self._model.transcribe(
             pcm,
@@ -78,9 +74,7 @@ class FasterWhisperEngine:
             **gen_kwargs,
         )
         text = " ".join(s.text.strip() for s in segments if s.text.strip())
-        return AsrChunkResult(
-            text=text, language=info.language, start_s=start_s, end_s=end_s
-        )
+        return AsrChunkResult(text=text, language=info.language, start_s=start_s, end_s=end_s)
 
     @property
     def loaded_config(self) -> tuple[str, str] | None:

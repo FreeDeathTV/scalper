@@ -2,20 +2,15 @@
 
 import numpy as np
 import pytest
-
 from core import audio_preprocess as ap
 
 
-def tone(
-    freq: float, seconds: float, sr: int = 16_000, amp: float = 0.25
-) -> np.ndarray:
+def tone(freq: float, seconds: float, sr: int = 16_000, amp: float = 0.25) -> np.ndarray:
     t = np.arange(int(sr * seconds)) / sr
     return (amp * np.sin(2 * np.pi * freq * t)).astype(np.float32)
 
 
-def with_silence(
-    center: np.ndarray, silence_s: float = 0.7, sr: int = 16_000
-) -> np.ndarray:
+def with_silence(center: np.ndarray, silence_s: float = 0.7, sr: int = 16_000) -> np.ndarray:
     pad = np.zeros(int(sr * silence_s), dtype=np.float32)
     return np.concatenate([pad, center, pad])
 

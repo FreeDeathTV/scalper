@@ -1,0 +1,10 @@
+# Optional feature backends (spec §6 / §11). Base runtime never needs these;
+# each engine module guards its own import so /health reports availability.
+# Install selectively, e.g.:  pip install -r backend/requirements-extras.txt
+
+faster-whisper>=1.0        # ASR engine (M1)
+onnxruntime>=1.18          # Silero VAD inference (M1) — model from MODEL_MANIFEST.json
+# whisperx                 # word-level alignment (M2)
+# pyannote.audio>=3.1      # diarization (M3) — HF token required (spec §11)
+# sounddevice              # live mic capture (M5)
+# jiwer                    # benchmark WER scoring (M6)

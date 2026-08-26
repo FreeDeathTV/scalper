@@ -12,10 +12,9 @@ import json
 import logging
 import sys
 
+from core import pipeline
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
-
-from core import pipeline
 from ipc.events import bus
 from ipc.schemas import (
     BatchJobRequest,

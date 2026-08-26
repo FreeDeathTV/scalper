@@ -7,9 +7,9 @@ the `parakeet.enabled` settings flag per docs/GITHUB_WORKFLOW.md §4.
 from __future__ import annotations
 
 import numpy as np
+from ipc.schemas import Settings
 
 from ..transcriber import AsrChunkResult
-from ipc.schemas import Settings
 
 
 class ParakeetEngine:
@@ -26,9 +26,7 @@ class ParakeetEngine:
     def load(self, settings: Settings) -> None:
         if not settings.model_size.startswith(("parakeet", "canary")):
             raise ValueError("ParakeetEngine requires a parakeet/canary model_size")
-        raise NotImplementedError(
-            "Parakeet backend lands in M1+; see checklist decisions log"
-        )
+        raise NotImplementedError("Parakeet backend lands in M1+; see checklist decisions log")
 
     def unload(self) -> None:
         pass

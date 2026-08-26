@@ -1,7 +1,6 @@
 """VAD segmentation + diarizer word-mapping logic (no model downloads needed)."""
 
 import numpy as np
-
 from core import vad_segmenter as vad
 from core.diarizer import map_turns_to_words
 from ipc.schemas import TranscriptDocument, TranscriptSegment, TranscriptWord
@@ -17,9 +16,7 @@ class TestSegmentation:
         audio = np.concatenate(
             [
                 np.zeros(16_000, dtype=np.float32),
-                (0.3 * np.sin(2 * np.pi * 300 * np.arange(16_000 * 2) / 16_000)).astype(
-                    np.float32
-                ),
+                (0.3 * np.sin(2 * np.pi * 300 * np.arange(16_000 * 2) / 16_000)).astype(np.float32),
                 np.zeros(16_000, dtype=np.float32),
             ]
         )
@@ -63,9 +60,7 @@ def _doc() -> TranscriptDocument:
                 end=6.5,
                 text="second turn",
                 words=[
-                    TranscriptWord(
-                        start=5.0, end=6.5, text="second turn", confidence=0.8
-                    ),
+                    TranscriptWord(start=5.0, end=6.5, text="second turn", confidence=0.8),
                 ],
             ),
         ],

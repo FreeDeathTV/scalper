@@ -20,7 +20,8 @@ Status key: ☐ not started · ◐ partially done · ☑ done · ❌ blocked (no
 - ☐ `audio_preprocess`: RMS normalize → trim → optional RNNoise, unit tests
 - ☐ `vad_segmenter`: Silero integration, segment JSON out, non-speech exclusion enforced
 - ☐ `transcriber.faster_whisper_engine`: device/compute-type fallback ladder implemented (spec §6)
-- ☐ Model downloader script + SHA-256 verification against MODEL_MANIFEST.json
+- ☑ Model downloader script + SHA-256 verification against MODEL_MANIFEST.json
+  *(silero-vad-v5 ONNX downloaded to ~/.scalper/models and pinned+verified; whisper CT2 weights fetch by pinned HF id on first run)*
 - ☐ Progress: stage-weighted JobStatus over SSE consumed by ProgressBar component
 - ☐ Exporters: TXT + SRT writers, matches format examples in tests/fixtures/exported/
 - ☐ Cancellation path: POST /jobs/cancel stops mid-stage within 1 s (test required)

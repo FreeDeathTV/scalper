@@ -136,30 +136,49 @@ Frontend ↔ backend exchange JSON matching these Pydantic schemas; mirror them 
 
 ```python
 class TranscriptWord(BaseModel):
-    start: float; end: float; text: str; confidence: float
-    speaker: str | None = None          # "Speaker 1"
+    start: float
+    end: float
+    text: str
+    confidence: float
+    speaker: str | None = None  # "Speaker 1"
     low_confidence: bool = False
 
+
 class TranscriptSegment(BaseModel):
-    start: float; end: float; text: str
+    start: float
+    end: float
+    text: str
     words: list[TranscriptWord]
     language: str | None = None
     draft: bool = False
+
 
 class TranscriptDocument(BaseModel):
     schema_version: Literal[1]
     source_file: str | None
     duration_s: float
-    language: str                       # ISO 639-1
+    language: str  # ISO 639-1
     segments: list[TranscriptSegment]
     vocabulary_applied: list[str]
 
+
 class JobStatus(BaseModel):
     job_id: str
-    stage: Literal["queued","preprocess","vad","transcribe","align",
-                   "diarize","postprocess","export","done","error","cancelled"]
-    progress: float                     # 0.0–1.0 within current stage
-    overall_progress: float             # weighted across stages
+    stage: Literal[
+        "queued",
+        "preprocess",
+        "vad",
+        "transcribe",
+        "align",
+        "diarize",
+        "postprocess",
+        "export",
+        "done",
+        "error",
+        "cancelled",
+    ]
+    progress: float  # 0.0–1.0 within current stage
+    overall_progress: float  # weighted across stages
     message: str | None
 ```
 

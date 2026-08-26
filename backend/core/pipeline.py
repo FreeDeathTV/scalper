@@ -16,8 +16,6 @@ from pathlib import Path
 from typing import cast
 
 import numpy as np
-
-from core import audio_preprocess, exporter, postprocess, vad_segmenter
 from ipc.events import EventBus, compute_overall
 from ipc.schemas import (
     BatchJobRequest,
@@ -25,6 +23,8 @@ from ipc.schemas import (
     TranscriptDocument,
     TranscriptSegment,
 )
+
+from core import audio_preprocess, exporter, postprocess, vad_segmenter
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +64,7 @@ async def run_batch(request: BatchJobRequest, bus: EventBus) -> TranscriptDocume
         audio_pcm, sr = await loop.run_in_executor(
             None, audio_preprocess.load_audio, request.file_path
         )
-        prep = audio_preprocess.preprocess(
-            audio_pcm, sr, denoise_enabled=request.settings.denoise
-        )
+        prep = audio_preprocess.preprocess(audio_pcm, sr, denoise_enabled=request.settings.denoise)
         pcm = cast(np.ndarray, prep["audio"])
         # TODO(m1): segment timestamps below are offsets into the TRIMMED timeline;
         # before release they must be rebased onto the source-file timeline using
@@ -80,9 +78,7 @@ async def run_batch(request: BatchJobRequest, bus: EventBus) -> TranscriptDocume
         # ---- vad ----
         _check_cancel(job_id)
         model = await loop.run_in_executor(None, vad_segmenter.load_vad_model)
-        segments = vad_segmenter.segment(
-            pcm, threshold=request.settings.vad_threshold, model=model
-        )
+        segments = vad_segmenter.segment(pcm, threshold=request.settings.vad_threshold, model=model)
         chunks = vad_segmenter.chunks_for_asr(pcm, segments)
         emit("vad", 1.0, f"{len(chunks)} speech segments")
 
@@ -106,9 +102,7 @@ async def run_batch(request: BatchJobRequest, bus: EventBus) -> TranscriptDocume
                 ),
             )
             language = language or result.language
-            doc_segments.append(
-                TranscriptSegment(start=start_s, end=end_s, text=result.text)
-            )
+            doc_segments.append(TranscriptSegment(start=start_s, end=end_s, text=result.text))
             emit("transcribe", (i + 1) / max(len(chunks), 1))
 
         doc = TranscriptDocument(
@@ -126,9 +120,7 @@ async def run_batch(request: BatchJobRequest, bus: EventBus) -> TranscriptDocume
             seg_idx = doc.segments.index(seg)
             a, b, chunk = chunks[seg_idx]
             local = seg.model_copy(update={"start": 0.0, "end": b - a})
-            aligned = await loop.run_in_executor(
-                None, align_segment, chunk, local, language
-            )
+            aligned = await loop.run_in_executor(None, align_segment, chunk, local, language)
             aligned.start, aligned.end = a, b
             doc.segments[seg_idx] = aligned
         emit("align", 1.0)
@@ -138,9 +130,7 @@ async def run_batch(request: BatchJobRequest, bus: EventBus) -> TranscriptDocume
             _check_cancel(job_id)
             from core.diarizer import apply_diarization
 
-            doc = await loop.run_in_executor(
-                None, apply_diarization, doc, pcm, request.settings
-            )
+            doc = await loop.run_in_executor(None, apply_diarization, doc, pcm, request.settings)
         emit("diarize", 1.0)
 
         # ---- postprocess + export ----

@@ -67,9 +67,7 @@ def to_vtt(doc: TranscriptDocument) -> str:
         for w in seg.words:
             idx += 1
             body = f"<{w.speaker}> " if w.speaker else ""
-            word_cues.append(
-                _cue_block(idx, w.start, w.end, body + w.text.strip(), _ts_vtt)
-            )
+            word_cues.append(_cue_block(idx, w.start, w.end, body + w.text.strip(), _ts_vtt))
     return header + "\n".join(cues + word_cues)
 
 
@@ -85,9 +83,7 @@ FORMATTERS = {
 }
 
 
-def export(
-    doc: TranscriptDocument, out_dir: str | Path, formats: Sequence[str]
-) -> list[Path]:
+def export(doc: TranscriptDocument, out_dir: str | Path, formats: Sequence[str]) -> list[Path]:
     """Write requested formats next to each other; returns written paths."""
     base = Path(out_dir)
     base.mkdir(parents=True, exist_ok=True)

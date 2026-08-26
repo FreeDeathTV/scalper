@@ -8,7 +8,6 @@ Pipeline tolerates its absence: segments carry segment-level times only, and
 from __future__ import annotations
 
 import numpy as np
-
 from ipc.schemas import TranscriptSegment, TranscriptWord
 
 

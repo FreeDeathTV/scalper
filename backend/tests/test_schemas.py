@@ -1,7 +1,6 @@
 """IPC contracts as consumed by CI/tests."""
 
 import pytest
-
 from ipc.events import compute_overall
 from ipc.schemas import (
     BatchJobRequest,
@@ -31,9 +30,7 @@ def test_word_confidence_bounds():
 
 
 def test_transcript_document_schema_version_locked():
-    doc = TranscriptDocument(
-        segments=[TranscriptSegment(start=0, end=1, text="hello world")]
-    )
+    doc = TranscriptDocument(segments=[TranscriptSegment(start=0, end=1, text="hello world")])
     assert doc.schema_version == 1  # Literal[1] per spec §5
 
 

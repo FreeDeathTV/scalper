@@ -17,9 +17,7 @@ def _doc() -> TranscriptDocument:
                 words=[
                     TranscriptWord(start=0.0, end=0.5, text="Welcome", confidence=0.95),
                     TranscriptWord(start=0.5, end=1.0, text="to", confidence=0.90),
-                    TranscriptWord(
-                        start=1.0, end=2.0, text="the meeting", confidence=0.88
-                    ),
+                    TranscriptWord(start=1.0, end=2.0, text="the meeting", confidence=0.88),
                 ],
             ),
             TranscriptSegment(start=3.0, end=5.5, text="Second speaker starts here"),
