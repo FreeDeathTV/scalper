@@ -172,6 +172,8 @@ export class LiveTranscriber {
 	static subscribeEvents(
 		handler: (sessionId: string, text: string, startS: number) => void
 	): () => void {
+		// Defensive: never touch browser-only globals during SSR/prerender.
+		if (typeof EventSource === 'undefined') return () => {};
 		const es = new EventSource(`${BASE}/events`);
 		es.onmessage = (ev) => {
 			try {

@@ -11,8 +11,16 @@
 	let live: LiveTranscriber | null = null;
 	let unsubLive: (() => void) | null = null;
 
-	unsubLive ??= LiveTranscriber.subscribeEvents((_sid, text, startS) => {
-		liveLines = [...liveLines, { start_s: startS, text }];
+	// Subscribe inside $effect so this only runs in the browser, never during
+	// SSR/prerender: EventSource is a browser global (matches +page.svelte).
+	$effect(() => {
+		unsubLive = LiveTranscriber.subscribeEvents((_sid, text, startS) => {
+			liveLines = [...liveLines, { start_s: startS, text }];
+		});
+		return () => {
+			unsubLive?.();
+			unsubLive = null;
+		};
 	});
 
 	async function fail(e: unknown): Promise<void> {
