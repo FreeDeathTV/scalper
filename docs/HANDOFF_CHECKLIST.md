@@ -58,7 +58,8 @@ Status key: ☐ not started · ◐ partially done · ☑ done · ❌ blocked (no
 - ☐ Network-isolation audit performed offline (acceptance criteria spec §10)
 
 ## Cross-cutting (any time)
-- ☐ CI pipeline: ruff+mypy, eslint+prettier, pytest, cargo build matrix
+- ◐ CI pipeline: ruff+mypy(strict), eslint+prettier, pytest, cargo build matrix
+  *Full local parity verified on Windows before first push (all jobs green). Remaining: add prettier frontend formatting check + macOS CI run; enable required-status-checks in repo settings.*
 - ☐ Error taxonomy: user-readable messages for missing model / out-of-memory / bad file
 - ☐ Docs: BUILD.md fast-start variant of spec §12 (optional contribution)
 

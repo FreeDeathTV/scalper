@@ -28,7 +28,7 @@
 					{/if}
 					<!-- words rendered with low-confidence highlighting per spec §7.4 -->
 					{#each seg.words.length > 0 ? seg.words : [{ text: seg.text, low_confidence: false }] as w}
-						<span class:w.low_confidence>{w.text}</span>{' '}
+						<span class={w.low_confidence ? 'lc' : ''}>{w.text}</span>{' '}
 					{/each}
 				</div>
 			{/each}

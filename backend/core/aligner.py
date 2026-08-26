@@ -21,7 +21,9 @@ def aligner_available() -> bool:
         return False
 
 
-def align_segment(pcm: np.ndarray, seg: TranscriptSegment, language: str | None) -> TranscriptSegment:
+def align_segment(
+    pcm: np.ndarray, seg: TranscriptSegment, language: str | None
+) -> TranscriptSegment:
     """Attach word-level timestamps to one segment.
 
     Falls back to uniform interpolation across the segment when whisperx is not

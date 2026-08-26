@@ -14,11 +14,15 @@ class TestSegmentation:
         assert segs == []
 
     def test_tone_produces_at_least_one_segment(self):
-        audio = np.concatenate([
-            np.zeros(16_000, dtype=np.float32),
-            (0.3 * np.sin(2 * np.pi * 300 * np.arange(16_000 * 2) / 16_000)).astype(np.float32),
-            np.zeros(16_000, dtype=np.float32),
-        ])
+        audio = np.concatenate(
+            [
+                np.zeros(16_000, dtype=np.float32),
+                (0.3 * np.sin(2 * np.pi * 300 * np.arange(16_000 * 2) / 16_000)).astype(
+                    np.float32
+                ),
+                np.zeros(16_000, dtype=np.float32),
+            ]
+        )
         segs = vad.segment(audio)
         assert len(segs) >= 1
         for s in segs:
@@ -59,7 +63,9 @@ def _doc() -> TranscriptDocument:
                 end=6.5,
                 text="second turn",
                 words=[
-                    TranscriptWord(start=5.0, end=6.5, text="second turn", confidence=0.8),
+                    TranscriptWord(
+                        start=5.0, end=6.5, text="second turn", confidence=0.8
+                    ),
                 ],
             ),
         ],

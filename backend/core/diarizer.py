@@ -31,7 +31,9 @@ def hf_token_present() -> bool:
     return cache.exists()
 
 
-def apply_diarization(doc: TranscriptDocument, pcm: np.ndarray, settings: Settings) -> TranscriptDocument:
+def apply_diarization(
+    doc: TranscriptDocument, pcm: np.ndarray, settings: Settings
+) -> TranscriptDocument:
     """Label speakers Speaker 1..N via max temporal overlap mapping (spec §4)."""
     if not (settings.diarize and diarizer_available() and hf_token_present()):
         return doc  # graceful skip mode with clear UI messaging handled client-side
@@ -40,7 +42,9 @@ def apply_diarization(doc: TranscriptDocument, pcm: np.ndarray, settings: Settin
     raise NotImplementedError("wire pyannote in M3")
 
 
-def map_turns_to_words(doc: TranscriptDocument, turns: list[tuple[str, float, float]]) -> TranscriptDocument:
+def map_turns_to_words(
+    doc: TranscriptDocument, turns: list[tuple[str, float, float]]
+) -> TranscriptDocument:
     """Shared overlap-mapping logic — unit-testable without pyannote installed."""
     for seg in doc.segments:
         for w in seg.words:

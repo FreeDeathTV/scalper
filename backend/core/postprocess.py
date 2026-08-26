@@ -11,13 +11,15 @@ from __future__ import annotations
 import re
 from collections import Counter
 
-from ipc.schemas import TranscriptDocument, TranscriptSegment, TranscriptWord
+from ipc.schemas import TranscriptDocument
 
 CONFIDENCE_FLOOR = 0.35  # spec §7.4
 REPETITION_NGRAM_THRESHOLD = 4  # spec §7.2
 
 
-def detect_repetition_collapse(text: str, *, n: int = 3, threshold: int = REPETITION_NGRAM_THRESHOLD) -> bool:
+def detect_repetition_collapse(
+    text: str, *, n: int = 3, threshold: int = REPETITION_NGRAM_THRESHOLD
+) -> bool:
     """Whisper loop detection (spec §7.2): the same token n-gram recurring ≥ threshold times."""
     tokens = text.split()
     if len(tokens) < n * threshold:
@@ -76,7 +78,10 @@ def apply_vocabulary(
     if pattern is not None:
         for seg in doc.segments:
             seg.text = pattern.sub(replace, seg.text)
-            seg.words = [w.model_copy(update={"text": pattern.sub(replace, w.text)}) for w in seg.words]
+            seg.words = [
+                w.model_copy(update={"text": pattern.sub(replace, w.text)})
+                for w in seg.words
+            ]
     doc.vocabulary_applied = sorted(set(applied))
     return doc, doc.vocabulary_applied
 
@@ -96,9 +101,13 @@ def restore_punctuation_casing(doc: TranscriptDocument) -> TranscriptDocument:
     return doc
 
 
-def drop_runt_segments(doc: TranscriptDocument, min_speech_s: float = 0.25) -> TranscriptDocument:
+def drop_runt_segments(
+    doc: TranscriptDocument, min_speech_s: float = 0.25
+) -> TranscriptDocument:
     """Segments shorter than VAD min_speech are dropped entirely (spec §7.3)."""
-    doc.segments = [s for s in doc.segments if (s.end - s.start) >= min_speech_s or s.words]
+    doc.segments = [
+        s for s in doc.segments if (s.end - s.start) >= min_speech_s or s.words
+    ]
     return doc
 
 

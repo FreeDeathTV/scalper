@@ -7,6 +7,8 @@ reach the ASR stage. `segment()` is the only sanctioned boundary.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -26,23 +28,25 @@ class SpeechSegment:
         return self.end_s - self.start_s
 
 
-def load_vad_model(model_path: str | None = None):
+def load_vad_model(model_path: str | None = None) -> Any:
     """Load Silero ONNX; returns None when unavailable so callers can degrade."""
     try:
-        import onnxruntime as ort  # type: ignore[import-not-found]
+        import onnxruntime as ort
 
-        path = model_path or _default_model_path()
-        if not path.exists():
+        candidate = (
+            Path(model_path) if model_path is not None else _default_model_path()
+        )
+        if not candidate.exists():
             return None
-        return ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
+        return ort.InferenceSession(str(candidate), providers=["CPUExecutionProvider"])
     except Exception:
         return None
 
 
-def _default_model_path():
-    from pathlib import Path
-
-    local = Path(__file__).resolve().parent.parent / "tests" / "models" / "silero_vad.onnx"
+def _default_model_path() -> Path:
+    local = (
+        Path(__file__).resolve().parent.parent / "tests" / "models" / "silero_vad.onnx"
+    )
     return local if local.exists() else Path("silero_vad.onnx")
 
 
@@ -50,7 +54,7 @@ def segment(
     audio: np.ndarray,
     *,
     threshold: float = DEFAULT_THRESHOLD,
-    model=None,
+    model: Any = None,
 ) -> list[SpeechSegment]:
     """Split into speech segments using Silero probabilities.
 
@@ -72,7 +76,7 @@ def segment(
     segs: list[SpeechSegment] = []
     step = SILERO_SR // 100  # 10 ms frames, matching silero windowing
     in_run = False
-    run_start = 0
+    run_start = 0.0
     for i, flag in enumerate(voiced):
         t = i * step / SILERO_SR
         if flag and not in_run:
@@ -101,10 +105,10 @@ def _energy_gate(audio: np.ndarray) -> np.ndarray:
     n = len(audio) // frame
     frames = audio[: n * frame].reshape(n, frame)
     db = 20 * np.log10(np.maximum(np.sqrt(np.mean(frames**2, axis=1)), 1e-9))
-    return db > -40.0
+    return np.asarray(db > -40.0)
 
 
-def _silero_probabilities(audio: np.ndarray, session) -> np.ndarray:
+def _silero_probabilities(audio: np.ndarray, session: Any) -> np.ndarray:
     x = audio.astype(np.float32)
     chunk = SILERO_SR  # 1 s chunks keep state management simple
     out = []
@@ -122,7 +126,9 @@ def _silero_probabilities(audio: np.ndarray, session) -> np.ndarray:
     return np.repeat(np.asarray(out), SILERO_SR // 100)[:frame_count]
 
 
-def chunks_for_asr(audio: np.ndarray, segments: list[SpeechSegment]) -> list[tuple[float, float, np.ndarray]]:
+def chunks_for_asr(
+    audio: np.ndarray, segments: list[SpeechSegment]
+) -> list[tuple[float, float, np.ndarray]]:
     """Materialize PCM for each segment — the ONLY audio handed to transcriber."""
     out = []
     for s in segments:

@@ -26,11 +26,19 @@ class ParakeetEngine:
     def load(self, settings: Settings) -> None:
         if not settings.model_size.startswith(("parakeet", "canary")):
             raise ValueError("ParakeetEngine requires a parakeet/canary model_size")
-        raise NotImplementedError("Parakeet backend lands in M1+; see checklist decisions log")
+        raise NotImplementedError(
+            "Parakeet backend lands in M1+; see checklist decisions log"
+        )
 
     def unload(self) -> None:
         pass
 
-    def transcribe_chunk(self, pcm: np.ndarray, start_s: float, end_s: float,
-                         settings: Settings, **kw) -> AsrChunkResult:
+    def transcribe_chunk(
+        self,
+        pcm: np.ndarray,
+        start_s: float,
+        end_s: float,
+        settings: Settings,
+        **kw: object,
+    ) -> AsrChunkResult:
         raise NotImplementedError("Parakeet backend lands in M1+")

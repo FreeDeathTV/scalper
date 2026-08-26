@@ -10,6 +10,8 @@ import logging
 from dataclasses import dataclass
 from typing import Protocol
 
+import numpy as np
+
 from ipc.schemas import Settings
 
 logger = logging.getLogger(__name__)
@@ -30,7 +32,12 @@ class TranscriberEngine(Protocol):
     def load(self, settings: Settings) -> None: ...
     def unload(self) -> None: ...
     def transcribe_chunk(
-        self, pcm, start_s: float, end_s: float, settings: Settings, **kwargs
+        self,
+        pcm: np.ndarray,
+        start_s: float,
+        end_s: float,
+        settings: Settings,
+        **kwargs: object,
     ) -> AsrChunkResult: ...
 
 
@@ -49,10 +56,13 @@ def get_engine(settings: Settings) -> TranscriberEngine:
     """
     from core.devices import has_cuda
 
-    device = settings.effective_device
     candidates: list[TranscriberEngine] = []
 
-    if settings.model_size.startswith(("parakeet", "canary")) or settings.device == "cuda" and has_cuda():
+    if (
+        settings.model_size.startswith(("parakeet", "canary"))
+        or settings.device == "cuda"
+        and has_cuda()
+    ):
         try:
             from core.engines.parakeet_engine import ParakeetEngine
 
@@ -77,7 +87,7 @@ def get_engine(settings: Settings) -> TranscriberEngine:
 def resolve_ladder(settings: Settings) -> list[tuple[str, str]]:
     """Ordered (model_size, compute_type) attempts honoring explicit user choice."""
     requested = (settings.model_size, settings.compute_type)
-    ladder = [requested]
+    ladder: list[tuple[str, str]] = [requested]
     ladder += [x for x in _FALLBACK_LADDER if x != requested]
     if settings.model_size in ("small", "base"):  # small models keep their size
         return [requested]

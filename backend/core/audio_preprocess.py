@@ -26,13 +26,16 @@ def resample_to_16k(audio: np.ndarray, sr_in: int) -> np.ndarray:
     # Linear interpolation is quality-adequate for speech ASR input here;
     # swap to librosa.resample when available.
     try:
-        import librosa  # type: ignore[import-untyped]
+        import librosa
 
-        return librosa.resample(
-            audio.astype(np.float32), orig_sr=sr_in, target_sr=TARGET_SAMPLE_RATE
+        return np.asarray(
+            librosa.resample(
+                audio.astype(np.float32), orig_sr=sr_in, target_sr=TARGET_SAMPLE_RATE
+            ),
+            dtype=np.float32,
         )
     except ImportError:
-        return np.interp(xp, x, audio).astype(np.float32)
+        return np.asarray(np.interp(xp, x, audio), dtype=np.float32)
 
 
 def rms_dbfs(audio: np.ndarray) -> float:
@@ -40,7 +43,9 @@ def rms_dbfs(audio: np.ndarray) -> float:
     return 20 * np.log10(rms) if rms > 0 else -120.0
 
 
-def normalize_rms(audio: np.ndarray, target_dbfs: float = TARGET_RMS_DBFS) -> np.ndarray:
+def normalize_rms(
+    audio: np.ndarray, target_dbfs: float = TARGET_RMS_DBFS
+) -> np.ndarray:
     """RMS-normalize to target level with a gain ceiling (spec §2)."""
     if audio.size == 0:
         return audio
@@ -55,7 +60,9 @@ def normalize_rms(audio: np.ndarray, target_dbfs: float = TARGET_RMS_DBFS) -> np
     return out.astype(np.float32)
 
 
-def trim_silence(audio: np.ndarray, threshold_dbfs: float = TRIM_THRESHOLD_DBFS) -> tuple[np.ndarray, float, float]:
+def trim_silence(
+    audio: np.ndarray, threshold_dbfs: float = TRIM_THRESHOLD_DBFS
+) -> tuple[np.ndarray, float, float]:
     """Trim leading/trailing silence below threshold.
 
     Returns (trimmed_audio, start_seconds, end_seconds) where seconds are offsets
@@ -86,18 +93,30 @@ def trim_silence(audio: np.ndarray, threshold_dbfs: float = TRIM_THRESHOLD_DBFS)
 def denoise(audio: np.ndarray) -> np.ndarray:
     """RNNoise pass — optional (spec §2). Graceful no-op until the native lib ships (M1)."""
     try:
-        from rnnoise_python import RNNNoise  # type: ignore[import-not-found]
+        from rnnoise_python import RNNNoise
 
         d = RNNNoise()
-        chunks = [d.process_frame(chunk) for chunk in np.split(audio, np.arange(480, len(audio), 480)) if len(chunk) == 480]
+        chunks = [
+            d.process_frame(chunk)
+            for chunk in np.split(audio, np.arange(480, len(audio), 480))
+            if len(chunk) == 480
+        ]
         remainder_len = len(audio) % 480
-        tail = audio[-remainder_len:] if remainder_len else np.empty(0, dtype=np.float32)
-        return np.concatenate([np.concatenate(chunks), tail]).astype(np.float32) if chunks else audio
+        tail = (
+            audio[-remainder_len:] if remainder_len else np.empty(0, dtype=np.float32)
+        )
+        return (
+            np.concatenate([np.concatenate(chunks), tail]).astype(np.float32)
+            if chunks
+            else audio
+        )
     except ImportError:
         return audio
 
 
-def preprocess(audio: np.ndarray, sr_in: int, *, denoise_enabled: bool = False) -> dict[str, object]:
+def preprocess(
+    audio: np.ndarray, sr_in: int, *, denoise_enabled: bool = False
+) -> dict[str, object]:
     """Full chain: resample → (denoise) → normalize → trim."""
     x = resample_to_16k(audio, sr_in)
     if denoise_enabled:

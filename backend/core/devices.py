@@ -10,9 +10,9 @@ import os
 def has_cuda() -> bool:
     """Detect CUDA via ctranslate2 without importing heavy deps eagerly."""
     try:
-        import ctranslate2  # type: ignore[import-untyped]
+        import ctranslate2
 
-        return ctranslate2.get_cuda_device_count() > 0
+        return bool(ctranslate2.get_cuda_device_count())
     except Exception:
         return False
 

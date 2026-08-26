@@ -7,7 +7,6 @@
 
 	async function pickAndRun() {
 		try {
-			// @ts-expect-error tauri dialog plugin added in M0 wiring
 			const { open } = await import('@tauri-apps/plugin-dialog');
 			const selected = await open({ filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac', 'ogg'] }] });
 			if (typeof selected === 'string') await run(selected);

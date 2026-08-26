@@ -6,12 +6,16 @@ import pytest
 from core import audio_preprocess as ap
 
 
-def tone(freq: float, seconds: float, sr: int = 16_000, amp: float = 0.25) -> np.ndarray:
+def tone(
+    freq: float, seconds: float, sr: int = 16_000, amp: float = 0.25
+) -> np.ndarray:
     t = np.arange(int(sr * seconds)) / sr
     return (amp * np.sin(2 * np.pi * freq * t)).astype(np.float32)
 
 
-def with_silence(center: np.ndarray, silence_s: float = 0.7, sr: int = 16_000) -> np.ndarray:
+def with_silence(
+    center: np.ndarray, silence_s: float = 0.7, sr: int = 16_000
+) -> np.ndarray:
     pad = np.zeros(int(sr * silence_s), dtype=np.float32)
     return np.concatenate([pad, center, pad])
 
@@ -69,7 +73,14 @@ class TestFullChain:
         keys = {"audio", "sample_rate", "trim_start_s", "trim_end_s", "duration_s"}
         assert keys == set(report.keys())
         assert report["sample_rate"] == ap.TARGET_SAMPLE_RATE
-        assert abs(float(report["trim_end_s"]) - float(report["trim_start_s"]) - float(report["duration_s"])) < 0.05
+        assert (
+            abs(
+                float(report["trim_end_s"])
+                - float(report["trim_start_s"])
+                - float(report["duration_s"])
+            )
+            < 0.05
+        )
 
     def test_denoise_toggled_off_by_default_is_identity(self):
         x = with_silence(tone(350, 1.0))
