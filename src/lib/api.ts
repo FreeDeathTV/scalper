@@ -13,12 +13,20 @@ import type { HealthReport, JobStatus, Settings, TranscriptDocument } from '$lib
 const PORT = import.meta.env.VITE_SCALPER_PORT ?? '8000';
 
 async function resolvePort(): Promise<string> {
-	if (!import.meta.env.VITE_SCALPER_PORT && typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-		try {
-			const p = await invoke<number | null>('sidecar_port');
-			if (typeof p === 'number' && p > 0) return String(p);
-		} catch {
-			/* fall back to env/default if the bridge isn't ready */
+	// In Tauri the bridge only reports the port after the sidecar is healthy,
+	// and the webview mounts before that finishes — so poll briefly instead of
+	// falling back to a wrong port (which memoizes and stays wrong).
+	const isTauri =
+		typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+	if (!import.meta.env.VITE_SCALPER_PORT && isTauri) {
+		for (let attempt = 0; attempt < 40; attempt++) {
+			try {
+				const p = await invoke<number | null>('sidecar_port');
+				if (typeof p === 'number' && p > 0) return String(p);
+			} catch {
+				/* bridge not ready yet */
+			}
+			await new Promise((r) => setTimeout(r, 250));
 		}
 	}
 	return import.meta.env.VITE_SCALPER_PORT ?? '8000';

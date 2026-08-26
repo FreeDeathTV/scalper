@@ -17,12 +17,23 @@ fn sidecar_port() -> Option<u16> {
 
 static PORT: std::sync::OnceLock<u16> = std::sync::OnceLock::new();
 
+/// Repo root resolved from the crate manifest, NOT cwd: `cargo run` / the packaged
+/// binary may execute with any working directory, so current_dir()-relative
+/// paths here are a launch bug (sidecar failed with os error 267 under tauri dev).
+fn repo_root() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("src-tauri is one level under the repo root")
+        .to_path_buf()
+}
+
 fn locate_python() -> Option<std::path::PathBuf> {
     // Prefer the project venv (spec §12 quickstart); fall back to PATH python.
+    let root = repo_root();
     let venv = if cfg!(windows) {
-        ["backend", ".venv", "Scripts", "python.exe"].iter().collect::<std::path::PathBuf>()
+        root.join("backend").join(".venv").join("Scripts").join("python.exe")
     } else {
-        ["backend", ".venv", "bin", "python"].iter().collect::<std::path::PathBuf>()
+        root.join("backend").join(".venv").join("bin").join("python")
     };
     if venv.exists() {
         Some(venv)
@@ -51,9 +62,7 @@ fn spawn_sidecar(app: &tauri::AppHandle) -> Option<Child> {
     let python = locate_python()?;
     // Pick a free loopback port ourselves so the frontend never guesses.
     let port = portpicker::pick_unused_port().expect("no free loopback port");
-    let backend_dir = std::env::current_dir()
-        .map(|p| p.join("backend"))
-        .unwrap_or_else(|_| std::path::PathBuf::from("backend"));
+    let backend_dir = repo_root().join("backend");
 
     // uvicorn entrypoint from backend/requirements.txt; cwd=backend because
     // core.* imports are relative to it (see tests/conftest.py rationale).
