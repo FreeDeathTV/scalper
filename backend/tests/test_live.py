@@ -182,3 +182,44 @@ def test_cors_allows_webview_origin(client: TestClient) -> None:
         headers={"Origin": "http://tauri.localhost"},
     )
     assert res2.headers.get("access-control-allow-origin") == "http://tauri.localhost"
+
+
+def test_live_segment_serializes_as_live_segment_over_events() -> None:
+    """The frontend only renders SSE frames whose `event` is 'live_segment'.
+    Assert the SSE serialization contract (json.dumps(model_dump())) emits that
+    discriminator with intact text/session_id/start_s — mirrors main.py /events.
+
+    Single asyncio loop (asyncio.Queue is not thread-safe across loops), so we
+    publish+drain on the same loop rather than over a concurrent TestClient SSE.
+    """
+    import asyncio
+    import json
+
+    from ipc.events import bus
+    from ipc.schemas import LiveTranscriptEvent
+
+    async def run() -> dict:
+        q = bus.subscribe("*")
+        try:
+            bus.publish(
+                LiveTranscriptEvent(
+                    session_id="live-abc", start_s=0.0, end_s=1.7, text="hello world"
+                )
+            )
+            ev = await asyncio.wait_for(q.get(), timeout=2.0)
+            frame = f"data: {json.dumps(ev.model_dump())}\n\n"  # mirrors main.py
+            payload = json.loads(frame[len("data:"):].strip())
+            assert payload["event"] == "live_segment"
+            assert payload["session_id"] == "live-abc"
+            assert payload["start_s"] == 0.0
+            assert payload["text"] == "hello world"
+            return payload
+        finally:
+            bus.unsubscribe("*", q)
+
+    loop = asyncio.new_event_loop()
+    try:
+        payload = loop.run_until_complete(run())
+    finally:
+        loop.close()
+    assert payload["event"] == "live_segment"
