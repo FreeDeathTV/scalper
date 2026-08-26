@@ -29,6 +29,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from ipc.events import bus
 from ipc.schemas import (
@@ -45,6 +46,23 @@ logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 logger = logging.getLogger("main")
 
 app = FastAPI(title="scalper-transcriber-backend", version="0.1.0")
+
+# The webview is a different origin than the loopback sidecar (http://localhost:1420
+# in dev, http://tauri.localhost in the packaged Tauri window), so cross-origin
+# requests/SSE must be allowed explicitly. Local service only — safe.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:1420",
+        "http://127.0.0.1:1420",
+        "tauri://localhost",
+        "http://tauri.localhost",
+        "https://tauri.localhost",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")

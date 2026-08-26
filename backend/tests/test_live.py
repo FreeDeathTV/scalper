@@ -166,3 +166,19 @@ def test_upload_rejects_empty_payload(client: TestClient) -> None:
         files={"file": ("cap.wav", b"", "audio/wav")},
     )
     assert res.status_code == 400
+
+
+def test_cors_allows_webview_origin(client: TestClient) -> None:
+    """The Tauri webview is a different origin than the loopback sidecar; cross-origin
+    fetches/SSE must be allowed for it (dev localhost:1420 + packaged tauri.localhost)."""
+    res = client.get(
+        "/health",
+        headers={"Origin": "http://localhost:1420"},
+    )
+    assert res.status_code == 200
+    assert res.headers.get("access-control-allow-origin") == "http://localhost:1420"
+    res2 = client.get(
+        "/health",
+        headers={"Origin": "http://tauri.localhost"},
+    )
+    assert res2.headers.get("access-control-allow-origin") == "http://tauri.localhost"
