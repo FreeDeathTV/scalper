@@ -1,0 +1,29 @@
+name: Task
+description: A unit of work tracked from HANDOFF_CHECKLIST.md or the spec
+labels: []
+body:
+  - type: input
+    id: milestone
+    attributes:
+      label: Milestone
+      description: M0–M6 per docs/DEVELOPMENT_SPEC.md §9
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope (copy verbatim from checklist item)
+    validations:
+      required: true
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: Objective acceptance line; include test/fixture references
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks / flag strategy
+      description: Should this land behind a feature flag? See workflow doc §4.

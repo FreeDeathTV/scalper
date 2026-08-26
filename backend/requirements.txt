@@ -1,0 +1,17 @@
+# Backend runtime deps. Heavy model backends are intentionally NOT listed here;
+# each engine module guards its own import and /health reports availability
+# (spec §6 / §11). Optional extras live in requirements-extras.txt.
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+pydantic>=2.9,<3
+numpy>=1.26
+soundfile>=0.12
+
+# --- optional extras (install manually when enabling features) ---
+# faster-whisper>=1.0        # ASR engine (M1)
+# silero-vad                 # or onnxruntime + silero.onnx from MODEL_MANIFEST.json
+# whisperx                   # word alignment (M2)
+# pyannote.audio>=3.1        # diarization (M3) — HF token required (spec §11)
+# sounddevice                # live mic capture (M5)
+# jiwer                      # benchmark WER scoring (M6)
+# ruff / mypy / pytest       # dev tooling for CI parity

@@ -1,0 +1,36 @@
+name: Bug report
+description: Something misbehaves on main or in a tagged build
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Pipeline stage
+      options: [audio_preprocess, vad_segmenter, transcriber, aligner,
+                diarizer, postprocess, exporter, UI, IPC, packaging,
+                other]
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Commit / tag / release where observed
+    validations:
+      required: true
+  - type: checkboxes
+    id: regression
+    attributes:
+      label: Regression?
+      options:
+        - label: Worked on a previous tag; regressed after PR #___ → revert candidate first, fix later (workflow §1.4)
+  - type: textarea
+    id: repro
+    attributes:
+      label: Repro steps / expected / actual
+    validations:
+      required: true
+  - type: textarea
+    id: fixture
+    attributes:
+      label: Audio fixture reference
+      description: Short clip (<60 s) attached directly, or MODEL/fixtures manifest entry. Never full-length user audio.

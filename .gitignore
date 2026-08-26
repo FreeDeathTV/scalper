@@ -1,0 +1,33 @@
+# --- build / dev artifacts ---
+node_modules/
+dist/
+backend/.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+target/
+
+# --- never commit secrets or models (workflow §6) ---
+.env
+*.env
+**/*token*
+huggingface_token*
+models/
+*.bin
+*.onnx
+*.ckpt
+!backend/tests/models/silero_vad.onnx   # tiny VAD model is allowed for tests
+
+# --- media policy: fixtures ≤60 s only, explicit review otherwise ---
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+!backend/tests/fixtures/**/*.wav
+
+# OS noise
+.DS_Store
+Thumbs.db

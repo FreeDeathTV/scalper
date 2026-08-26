@@ -1,0 +1,26 @@
+{
+	"$comment": [
+		"Model inventory consumed by scripts/download_models.py (spec §2, §12).",
+		"Every entry carries sha256 so downloads are verified before use.",
+		"Update URLs/versions deliberately: checksum drift = rebuild of cache."
+	],
+	"tiers": {
+		"default": [
+			{
+				"id": "silero-vad-v5",
+				"url": "https://github.com/snakers4/silero-vad/raw/v5.1.2/src/silero_vad/data/silero_vad.onnx",
+				"sha256": "REPLACE_WITH_VERIFIED_SHA256_ON_FIRST_DOWNLOAD",
+				"dest": "silero_vad.onnx"
+			}
+		],
+		"whisper-large-v3-note": [
+			"faster-whisper fetches CT2 models from Hugging Face by id at first use.",
+			"We pin+verify them locally rather than vendoring weights (gitignored).",
+			"Pinned ids are listed here so upgrades are an explicit diff:"
+		],
+		"pinned_hf_ids": [
+			"Systran/faster-whisper-large-v3",
+			"Systran/faster-whisper-medium"
+		]
+	}
+}

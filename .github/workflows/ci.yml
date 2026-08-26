@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Backend (lint + type + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install ruff mypy pytest -r requirements.txt
+      - run: ruff format --check .
+      - run: ruff check .
+      - run: mypy --strict core ipc           # strict scope grows per spec §3
+      - run: pytest tests -q --maxfail=1
+
+  frontend:
+    name: Frontend (lint + type + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx eslint src --max-warnings 0
+      - run: npx svelte-check --fail-on-warnings
+      - run: npm run build
+
+  shell:
+    name: Tauri compile check
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: cargo check --manifest-path src-tauri/Cargo.toml
+
+  guard:
+    name: Repo hygiene guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Block large binaries
+        run: |
+          BIG=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null || git ls-files)
+          echo "$BIG" | while read f; do
+            [ -f "$f" ] && SIZE=$(stat -c%s "$f") || continue
+            if [ "$SIZE" -gt 52428800 ]; then   # 50 MB
+              echo "::error::$f exceeds 50 MB limit (workflow doc §6)"; exit 1
+            fi
+          done
+      - name: Secret scan (HF tokens et al.)
+        run: |
+          PATTERNS='hf_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{36}|AKIA[0-9A-Z]{16}'
+          if grep -rEn "$PATTERNS" --include='*' . \
+             --exclude-dir=.venv --exclude-dir=node_modules \
+             --exclude-dir=.git; then
+            echo "::error::possible credential committed"; exit 1
+          fi

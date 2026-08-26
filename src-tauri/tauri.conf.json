@@ -1,0 +1,31 @@
+{
+	"$schema": "https://schema.tauri.app/config/2",
+	"productName": "Scalper Transcriber",
+	"version": "0.1.0",
+	"identifier": "com.scalper.transcriber",
+	"build": {
+		"frontendDist": "../dist",
+		"devUrl": "http://localhost:1420",
+		"beforeDevCommand": "npm run dev",
+		"beforeBuildCommand": "npm run build"
+	},
+	"app": {
+		"windows": [
+			{
+				"title": "Scalper Transcriber",
+				"width": 1100,
+				"height": 760,
+				"minWidth": 860,
+				"minHeight": 560
+			}
+		],
+		"security": {
+			"csp": null
+		}
+	},
+	"bundle": {
+		"active": true,
+		"targets": ["nsis", "dmg"],
+		"icon": []
+	}
+}

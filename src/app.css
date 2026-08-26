@@ -1,0 +1,121 @@
+:root {
+	color-scheme: dark;
+	font-family: 'Segoe UI', system-ui, sans-serif;
+	background: #14171c;
+	color: #e6e9ef;
+}
+
+.shell {
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	gap: 0.75rem;
+	height: 100vh;
+	padding: 1rem;
+	box-sizing: border-box;
+}
+
+header {
+	display: flex;
+	align-items: baseline;
+	gap: 0.75rem;
+	border-bottom: 1px solid #2a2f39;
+	padding-bottom: 0.5rem;
+}
+
+header h1 {
+	font-size: 1.05rem;
+	margin: 0;
+}
+
+.status-pill {
+	font-size: 0.75rem;
+	padding: 0.15rem 0.6rem;
+	border-radius: 999px;
+	background: #232833;
+	color: #9aa3b2;
+}
+.status-pill.ok { color: #7fd18c; }
+.status-pill.degraded { color: #e4b45f; }
+
+.workspace {
+	display: grid;
+	grid-template-columns: 320px 1fr;
+	gap: 1rem;
+	min-height: 0;
+}
+
+.panel {
+	background: #1b1f27;
+	border: 1px solid #2a2f39;
+	border-radius: 8px;
+	padding: 0.9rem;
+	overflow-y: auto;
+}
+
+button {
+	background: #2d3340;
+	color: #e6e9ef;
+	border: 1px solid #3a4150;
+	border-radius: 6px;
+	padding: 0.45rem 0.9rem;
+	cursor: pointer;
+}
+button:hover:not(:disabled) { background: #363d4d; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: #2563eb; border-color: #2563eb; }
+button.primary:hover:not(:disabled) { background: #1d4ed8; }
+
+input[type='text'], input[type='number'], select {
+	width: 100%;
+	box-sizing: border-box;
+	background: #12151b;
+	color: inherit;
+	border: 1px solid #333a47;
+	border-radius: 6px;
+	padding: 0.4rem 0.5rem;
+}
+
+label.field {
+	display: block;
+	margin: 0.6rem 0;
+	font-size: 0.85rem;
+	color: #aab2c0;
+}
+
+.progress-track {
+	height: 10px;
+	background: #12151b;
+	border-radius: 999px;
+	overflow: hidden;
+	border: 1px solid #2a2f39;
+}
+.progress-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #2563eb, #60a5fa);
+	transition: width 0.25s ease;
+}
+.stage-label {
+	font-size: 0.78rem;
+	color: #9aa3b2;
+	margin-top: 0.3rem;
+}
+
+.segment-row {
+	padding: 0.45rem 0.55rem;
+	border-radius: 6px;
+	line-height: 1.5;
+	cursor: pointer;
+}
+.segment-row:hover { background: #21262f; }
+.speaker-tag {
+	font-size: 0.72rem;
+	font-weight: 600;
+	padding: 0.05rem 0.4rem;
+	border-radius: 999px;
+	background: #243044;
+	color: #8ab4f8;
+	margin-right: 0.4rem;
+}
+.lc { /* low-confidence word */
+	text-decoration: underline wavy #e4b45f;
+}
