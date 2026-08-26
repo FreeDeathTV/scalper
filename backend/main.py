@@ -232,7 +232,7 @@ async def ws_live(ws: WebSocket) -> None:
                     break
                 continue
             frame = msg.get("bytes")
-            if not frame:
+            if frame is None or len(frame) == 0:
                 continue
             pcm = np.frombuffer(frame, dtype="<f4").astype(np.float32)
             for start, end, chunk in buf.feed(pcm):
