@@ -14,10 +14,15 @@
 	// Subscribe inside $effect so this only runs in the browser, never during
 	// SSR/prerender: EventSource is a browser global (matches +page.svelte).
 	$effect(() => {
-		unsubLive = LiveTranscriber.subscribeEvents((_sid, text, startS) => {
-			liveLines = [...liveLines, { start_s: startS, text }];
+		let active = true;
+		LiveTranscriber.subscribeEvents((_sid, text, startS) => {
+			if (active) liveLines = [...liveLines, { start_s: startS, text }];
+		}).then((unsub) => {
+			if (!active) unsub();
+			else unsubLive = unsub;
 		});
 		return () => {
+			active = false;
 			unsubLive?.();
 			unsubLive = null;
 		};

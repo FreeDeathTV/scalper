@@ -10,11 +10,18 @@
 	let unsub: (() => void) | null = null;
 
 	$effect(() => {
+		let active = true;
 		getHealth()
 			.then((h) => (appState.health = h))
 			.catch((e) => (appState.sidecarError = String(e)));
-		unsub ??= onJobEvent((status) => (appState.job = status));
-		return () => unsub?.();
+		onJobEvent((status) => (appState.job = status)).then((u) => {
+			if (active) unsub = u;
+		});
+		return () => {
+			active = false;
+			unsub?.();
+			unsub = null;
+		};
 	});
 
 	const stageText = $derived(appState.job ? `${appState.job.stage} — ${Math.round(appState.job.progress * 100)}%` : 'idle');

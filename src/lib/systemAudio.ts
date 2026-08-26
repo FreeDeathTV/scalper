@@ -8,6 +8,8 @@
  * Firefox does not — surfaced as a readable error for the UI.
  */
 
+import { readyBase } from '$lib/api';
+
 const WORKLET_SRC = `
 class PcmTap extends AudioWorkletProcessor {
 	process(inputs) {
@@ -98,9 +100,6 @@ export function encodeWav(frames: Float32Array[], sampleRate = TARGET_SR): Blob 
 	return new Blob([buf], { type: 'audio/wav' });
 }
 
-const PORT = import.meta.env.VITE_SCALPER_PORT ?? '8000';
-const BASE = `http://127.0.0.1:${PORT}`;
-
 /** Record system audio locally; stop() returns the WAV for /capture/upload. */
 export class SystemAudioRecorder {
 	private frames: Float32Array[] = [];
@@ -135,7 +134,7 @@ export class LiveTranscriber {
 
 	async start(): Promise<void> {
 		this.stream = await openSystemAudioStream();
-		this.ws = new WebSocket(`ws://127.0.0.1:${PORT}/ws/live`);
+		this.ws = new WebSocket(`${(await readyBase()).replace('http', 'ws')}/ws/live`);
 		this.ws.binaryType = 'arraybuffer';
 		await new Promise<void>((resolve, reject) => {
 			if (!this.ws) return resolve();
@@ -169,12 +168,12 @@ export class LiveTranscriber {
 	}
 
 	/** Wire SSE-side delivery of finished utterances (call once at mount). */
-	static subscribeEvents(
+	static async subscribeEvents(
 		handler: (sessionId: string, text: string, startS: number) => void
-	): () => void {
+	): Promise<() => void> {
 		// Defensive: never touch browser-only globals during SSR/prerender.
 		if (typeof EventSource === 'undefined') return () => {};
-		const es = new EventSource(`${BASE}/events`);
+		const es = new EventSource(`${await readyBase()}/events`);
 		es.onmessage = (ev) => {
 			try {
 				const data = JSON.parse(ev.data) as { event?: string };
