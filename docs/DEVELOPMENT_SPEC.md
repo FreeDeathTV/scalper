@@ -264,7 +264,7 @@ Acceptance criteria (v1 sign-off):
 
 ```powershell
 # Prereqs: Node 20+, Rust toolchain, Python 3.11, ffmpeg on PATH, GitHub access per docs/GITHUB_WORKFLOW.md
-git clone <repo> && cd <repo>
+git clone https://github.com/FreeDeathTV/scalper.git && cd scalper
 git checkout -b feat/<issue#>-<slug>            # never commit to main directly
 npm install
 python -m venv backend/.venv

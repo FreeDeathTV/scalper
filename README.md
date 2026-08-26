@@ -1,6 +1,7 @@
 # Scalper Transcriber
 
 Fully-local speech-to-text desktop app. No cloud inference, no per-minute costs, no audio leaving the machine.
+CI: ![CI](https://github.com/FreeDeathTV/scalper/actions/workflows/ci.yml/badge.svg)
 
 **Start here as a contributor:** [`docs/DEVELOPMENT_SPEC.md`](docs/DEVELOPMENT_SPEC.md) → [`docs/GITHUB_WORKFLOW.md`](docs/GITHUB_WORKFLOW.md) → [`docs/HANDOFF_CHECKLIST.md`](docs/HANDOFF_CHECKLIST.md).
 

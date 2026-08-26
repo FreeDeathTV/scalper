@@ -1,0 +1,17 @@
+# Normalized cross-platform repos (devs on Windows + macOS, per spec §1)
+* text=auto eol=lf
+
+# Windows-specific scripts keep CRLF
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binaries — never touch
+*.ico binary
+*.png binary
+*.onnx binary
+*.wav binary
+*.mp3 binary
+
+# Lockfiles: generated, keep as-is
+package-lock.json linguist-generated=true merge=ours
+src-tauri/Cargo.lock linguist-generated=true merge=ours
