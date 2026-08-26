@@ -1,6 +1,5 @@
 name: Task
 description: A unit of work tracked from HANDOFF_CHECKLIST.md or the spec
-labels: []
 body:
   - type: input
     id: milestone
