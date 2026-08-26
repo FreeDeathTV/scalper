@@ -7,14 +7,20 @@
 	import { getHealth, onJobEvent } from '$lib/api';
 	import { appState } from '$lib/stores/appState.svelte';
 
-	let unsub: (() => void) | null = null;
+		let unsub: (() => void) | null = null;
 
 	$effect(() => {
 		let active = true;
 		getHealth()
-			.then((h) => (appState.health = h))
-			.catch((e) => (appState.sidecarError = String(e)));
-		onJobEvent((status) => (appState.job = status)).then((u) => {
+			.then((h) => {
+				appState.health = h;
+			})
+			.catch((e) => {
+				appState.sidecarError = String(e);
+			});
+		onJobEvent((status) => {
+			appState.job = status;
+		}).then((u) => {
 			if (active) unsub = u;
 		});
 		return () => {
