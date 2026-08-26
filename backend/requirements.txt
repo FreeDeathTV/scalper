@@ -2,8 +2,9 @@
 # each engine module guards its own import and /health reports availability
 # (spec §6 / §11). Optional extras live in requirements-extras.txt.
 fastapi>=0.115,<1
-uvicorn>=0.30,<1
+uvicorn[standard]>=0.30,<1   # [standard]: websockets for /ws/live
 pydantic>=2.9,<3
+python-multipart>=0.0.9      # /capture/upload form handling
 numpy>=1.26
 soundfile>=0.12
 

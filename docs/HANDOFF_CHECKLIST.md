@@ -44,9 +44,12 @@ Status key: ☐ not started · ◐ partially done · ☑ done · ❌ blocked (no
 - ☐ Translation mode (task=translate) retaining original-language transcript alongside
 - ☐ Punctuation/casing restoration stage + toggle
 
-## M5 — Live mic
-- ☐ sounddevice capture at 16 kHz mono; ring buffer + backpressure policy documented
-- ☐ Draft stream every ~4 s (small model) flagged `draft:true`
+## M5 — Live capture (system audio + mic)
+- ☑ System-audio loopback capture (webview `getDisplayMedia` → AudioWorklet 16 kHz PCM tap)
+  *Additive feature lands ahead of M5: record-then-transcribe via POST /capture/upload reusing the
+  batch pipeline, and a live path over /ws/live with energy-gated utterance segmentation (core/live.py).*
+- ☐ sounddevice mic capture at 16 kHz mono; ring buffer + backpressure policy documented
+- ☐ Draft stream every ~4 s (small model) flagged `draft:true`; live session uses faster-whisper directly behind per-utterance buffer
 - ☐ Final two-pass polish on stop (large model), diff-safe merge into UI
 - ☐ Memory soak test: 30-min session, RSS flat (evidence in docs/BENCHMARKS.md)
 

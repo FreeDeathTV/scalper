@@ -58,3 +58,30 @@ export async function getTranscript(jobId: string): Promise<TranscriptDocument> 
 	if (!res.ok) throw new Error(await describeError(res));
 	return res.json();
 }
+
+/** Upload a system-audio capture WAV; returns the batch job id to poll. */
+export async function uploadCapture(wav: Blob, settings: Settings): Promise<string> {
+	const form = new FormData();
+	form.append('file', wav, 'capture.wav');
+	form.append('settings_json', JSON.stringify(settings));
+	const res = await fetch(`${BASE}/capture/upload`, { method: 'POST', body: form });
+	if (!res.ok) throw new Error(await describeError(res));
+	const { job_id } = (await res.json()) as { job_id: string };
+	return job_id;
+}
+
+/** Poll until the job's transcript document is ready (server 404s until then). */
+export async function waitForTranscript(
+	jobId: string,
+	timeoutMs = 10 * 60_000
+): Promise<TranscriptDocument> {
+	const deadline = Date.now() + timeoutMs;
+	while (Date.now() < deadline) {
+		try {
+			return await getTranscript(jobId);
+		} catch {
+			await new Promise((r) => setTimeout(r, 1500));
+		}
+	}
+	throw new Error('timed out waiting for transcript');
+}

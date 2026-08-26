@@ -2,6 +2,7 @@
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import SettingsPanel from '$lib/components/SettingsPanel.svelte';
 	import FileLoader from '$lib/components/FileLoader.svelte';
+	import MicController from '$lib/components/MicController.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 	import { getHealth, onJobEvent } from '$lib/api';
 	import { appState } from '$lib/stores/appState.svelte';
@@ -33,6 +34,7 @@
 <div class="workspace">
 	<div class="panel">
 		<FileLoader />
+		<MicController />
 		<SettingsPanel />
 	</div>
 	<div class="panel">

@@ -22,6 +22,7 @@ Stage = Literal[
     "done",
     "error",
     "cancelled",
+    "listening",  # live session idle/waiting for speech
 ]
 
 ComputeType = Literal["int8", "int8_float16", "float16"]
@@ -88,11 +89,22 @@ class StreamStartRequest(BaseModel):
 
 
 class JobStatus(BaseModel):
+    event: Literal["job_status"] = "job_status"  # SSE discriminator
     job_id: str
     stage: Stage = "queued"
     progress: float = Field(default=0.0, ge=0.0, le=1.0)  # within current stage
     overall_progress: float = Field(default=0.0, ge=0.0, le=1.0)
     message: str | None = None
+
+
+class LiveTranscriptEvent(BaseModel):
+    """One completed utterance from a live capture session, via GET /events."""
+
+    event: Literal["live_segment"] = "live_segment"
+    session_id: str
+    start_s: float  # absolute offset in the live stream
+    end_s: float
+    text: str
 
 
 class JobCreated(BaseModel):

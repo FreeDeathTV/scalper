@@ -23,6 +23,7 @@ from ipc.schemas import (
     TranscriptDocument,
     TranscriptSegment,
 )
+from pydantic import BaseModel
 
 from core import audio_preprocess, exporter, postprocess, vad_segmenter
 
@@ -40,7 +41,7 @@ def _check_cancel(job_id: str) -> None:
         raise CancelledError(job_id)
 
 
-async def run_batch(request: BatchJobRequest, bus: EventBus) -> TranscriptDocument:
+async def run_batch(request: BatchJobRequest, bus: EventBus[BaseModel]) -> TranscriptDocument:
     job_id = uuid.uuid4().hex[:12]
     loop = asyncio.get_running_loop()
 

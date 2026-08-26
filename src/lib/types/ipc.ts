@@ -5,7 +5,8 @@
 
 export type Stage =
 	| 'queued' | 'preprocess' | 'vad' | 'transcribe' | 'align'
-	| 'diarize' | 'postprocess' | 'export' | 'done' | 'error' | 'cancelled';
+	| 'diarize' | 'postprocess' | 'export' | 'done' | 'error' | 'cancelled'
+	| 'listening';
 
 export type Device = 'auto' | 'cuda' | 'cpu';
 export type ComputeType = 'int8' | 'int8_float16' | 'float16';
@@ -66,11 +67,21 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export interface JobStatus {
+	event: 'job_status';
 	job_id: string;
 	stage: Stage;
 	progress: number; // within current stage
 	overall_progress: number; // weighted across stages
 	message?: string | null;
+}
+
+/** One completed utterance from a live capture session, delivered via /events. */
+export interface LiveTranscriptEvent {
+	event: 'live_segment';
+	session_id: string;
+	start_s: number; // absolute offset in the live stream
+	end_s: number;
+	text: string;
 }
 
 export interface HealthReport {

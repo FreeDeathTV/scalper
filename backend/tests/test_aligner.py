@@ -1,6 +1,6 @@
 """Aligner tests — interpolation fallback + empty-segment regression."""
-import numpy as np
 
+import numpy as np
 from core.aligner import _interpolate_words, align_segment
 from ipc.schemas import TranscriptSegment
 
