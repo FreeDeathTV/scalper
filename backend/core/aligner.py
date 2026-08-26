@@ -37,6 +37,11 @@ def align_segment(
 
 
 def _interpolate_words(seg: TranscriptSegment, tokens: list[str]) -> TranscriptSegment:
+    if not tokens:
+        # Whisper can legitimately emit an empty segment (silence/noise);
+        # division by zero here crashed real jobs — see M1 E2E smoke finding.
+        seg.words = []
+        return seg
     dur = max(seg.end - seg.start, 1e-6)
     per = dur / len(tokens)
     seg.words = [
