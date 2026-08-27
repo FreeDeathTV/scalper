@@ -10,6 +10,19 @@
 	let live: LiveTranscriber | null = null;
 	let unsubLive: (() => void) | null = null;
 
+	function withoutOverlap(text: string): string {
+		const previous = appState.liveLines.at(-1)?.text ?? '';
+		const previousWords = previous.trim().split(/\s+/);
+		const currentWords = text.trim().split(/\s+/);
+		const maxOverlap = Math.min(previousWords.length, currentWords.length);
+		for (let count = maxOverlap; count >= 2; count--) {
+			const suffix = previousWords.slice(-count).join(' ').toLowerCase();
+			const prefix = currentWords.slice(0, count).join(' ').toLowerCase();
+			if (suffix === prefix) return currentWords.slice(count).join(' ');
+		}
+		return text.trim();
+	}
+
 	// Subscribe inside $effect so this only runs in the browser, never during
 	// SSR/prerender: EventSource is a browser global (matches +page.svelte).
 	// The sidecar broadcasts live_segment events for ALL sessions on the shared
@@ -20,7 +33,8 @@
 		let active = true;
 		LiveTranscriber.subscribeEvents((sid, text, startS) => {
 			if (active && live && sid === live.sessionId) {
-				appState.liveLines = [...appState.liveLines, { start_s: startS, text }];
+				const cleaned = withoutOverlap(text);
+				if (cleaned) appState.liveLines = [...appState.liveLines, { start_s: startS, text: cleaned }];
 			}
 		}).then((unsub) => {
 			if (!active) unsub();

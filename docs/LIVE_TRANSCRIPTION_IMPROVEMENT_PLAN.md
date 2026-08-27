@@ -33,7 +33,7 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 - [ ] Replace the single hard-limit buffer with configurable 3–5 second rolling chunks.
 - [x] Add 0.3–0.6 second overlap between adjacent chunks (0.5 seconds).
 - [ ] Add stable chunk/segment IDs.
-- [ ] Deduplicate repeated words at overlap boundaries.
+- [x] Deduplicate repeated words at overlap boundaries.
 - [ ] Provide Fast, Balanced, and Quality latency presets.
 - [ ] Acceptance: Fast mode produces visible text within 3–5 seconds during continuous speech
   without duplicated boundary text.
