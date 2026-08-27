@@ -1,6 +1,6 @@
 # Development tooling — install with:
 #   pip install -r backend/requirements-dev.txt
 pytest>=8.2
-httpx>=0.27                  # fastapi.testclient transport
+httpx2>=0.27                 # fastapi.testclient transport
 ruff>=0.6
 mypy>=1.11

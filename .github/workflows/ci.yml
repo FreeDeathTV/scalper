@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
-      - run: pip install ruff mypy pytest -r requirements.txt
+      - run: pip install ruff mypy pytest httpx2 -r requirements.txt
       - run: ruff format --check .
       - run: ruff check .
       - run: mypy --strict core ipc           # strict scope grows per spec §3
