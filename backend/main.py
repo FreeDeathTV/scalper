@@ -196,7 +196,9 @@ async def ws_live(ws: WebSocket) -> None:
         await ws.close(code=1011)
         return
 
-    buf = UtteranceBuffer()
+    # Keep live results responsive; long uninterrupted speech is split into
+    # shorter ASR chunks instead of waiting up to the batch-oriented default.
+    buf = UtteranceBuffer(max_utterance_s=6.0)
     live_job = f"live-{session_id}"
     transcription_lock = asyncio.Lock()
     transcription_tasks: list[asyncio.Task[None]] = []
