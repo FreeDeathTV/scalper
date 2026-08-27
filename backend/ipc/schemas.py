@@ -58,6 +58,7 @@ class TranscriptDocument(BaseModel):
 
 class Settings(BaseModel):
     model_size: str = "medium"
+    final_model_size: str | None = None
     language: str | None = None
     live_chunk_seconds: float = Field(default=4.0, ge=3.0, le=5.0)
     device: Device = "auto"

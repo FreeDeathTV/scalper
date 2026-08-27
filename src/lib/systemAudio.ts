@@ -190,7 +190,7 @@ export class LiveTranscriber {
 
 	/** Wire SSE-side delivery of finished utterances (call once at mount). */
 	static async subscribeEvents(
-		handler: (sessionId: string, text: string, startS: number, draft: boolean) => void
+		handler: (sessionId: string, text: string, startS: number, endS: number, draft: boolean) => void
 	): Promise<() => void> {
 		// Defensive: never touch browser-only globals during SSR/prerender.
 		if (typeof EventSource === 'undefined') return () => {};
@@ -203,9 +203,10 @@ export class LiveTranscriber {
 						session_id: string;
 						text: string;
 						start_s: number;
+						end_s: number;
 						draft?: boolean;
 					};
-					handler(seg.session_id, seg.text, seg.start_s, seg.draft !== false);
+					handler(seg.session_id, seg.text, seg.start_s, seg.end_s, seg.draft !== false);
 				}
 			} catch {
 				/* ignore malformed frames */

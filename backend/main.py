@@ -292,7 +292,12 @@ async def ws_live(ws: WebSocket) -> None:
             settings.model_size,
             settings.effective_device,
         )
-        result = await asyncio.to_thread(engine.transcribe_chunk, pcm, 0.0, duration_s, settings)
+        final_settings = settings
+        final_engine = engine
+        if settings.final_model_size and settings.final_model_size != settings.model_size:
+            final_settings = settings.model_copy(update={"model_size": settings.final_model_size})
+            final_engine = await asyncio.to_thread(get_engine, final_settings)
+        result = await asyncio.to_thread(final_engine.transcribe_chunk, pcm, 0.0, duration_s, final_settings)
         final_text = result.text.strip()
         if final_text:
             bus.publish(

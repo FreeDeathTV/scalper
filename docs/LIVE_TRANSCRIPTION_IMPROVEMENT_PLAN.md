@@ -77,6 +77,7 @@ change as a transcription artifact.
 - [x] Deduplicate repeated words at overlap boundaries.
 - [x] Replace text-prefix cleanup with normalized token overlap merging that
   handles punctuation, casing, and one-word repeats.
+- [x] Suppress exact duplicate fragments only when timestamps place them within 1.5 seconds.
 - [ ] Extend overlap merging to partial-word and token/segment boundary cases.
 - [ ] Provide Fast, Balanced, and Quality latency presets.
 - [ ] Acceptance: Fast mode produces visible text within 3–5 seconds during continuous speech
@@ -102,7 +103,7 @@ change as a transcription artifact.
 
 - [x] Emit live chunks as `draft: true`.
 - [x] Keep captured audio for the session.
-- [x] On Stop and finalize, transcribe the retained capture.
+- [x] On Stop and finalize, transcribe the retained capture. The selected quality model is loaded for this final pass while live drafts remain on Base CPU.
 - [x] Replace drafts with the final segment while preserving the full capture range.
 - [x] Add regression coverage for draft replacement and finalization.
 - [x] Ensure Stop flushes the remaining tail audio and waits for the final

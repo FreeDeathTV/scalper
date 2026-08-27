@@ -94,6 +94,7 @@ class _FakeEngine:
 
     def __init__(self) -> None:
         self.calls: list[int] = []
+        self.models: list[str] = []
 
     def available(self) -> bool:
         return True
@@ -106,6 +107,7 @@ class _FakeEngine:
         self, pcm: np.ndarray, start_s: float, end_s: float, settings: Settings, **kw: object
     ) -> AsrChunkResult:
         self.calls.append(pcm.size)
+        self.models.append(settings.model_size)
         return AsrChunkResult(text="hello world", language="en", start_s=start_s, end_s=end_s)
 
 
@@ -143,7 +145,7 @@ def test_ws_live_emits_draft_then_final_segment(
     sub = bus.subscribe("*")  # subscriber exists BEFORE publishing, like the real UI
     try:
         with client.websocket_connect("/ws/live") as ws:
-            ws.send_json({"settings": {"model_size": "tiny"}})
+            ws.send_json({"settings": {"model_size": "base", "final_model_size": "medium"}})
             ack = ws.receive_json()
             assert set(ack) == {"session_id"}
             ws.send_bytes(_speech(1.0).tobytes())
@@ -175,6 +177,7 @@ def test_ws_live_emits_draft_then_final_segment(
     assert events[1]["start_s"] == 0.0
     assert abs(events[1]["end_s"] - 1.7) < 0.02
     assert fake_engine.calls == [int(1.7 * SR), int(1.7 * SR)]
+    assert fake_engine.models == ["base", "medium"]
 
 
 def test_upload_capture_returns_job(client: TestClient) -> None:

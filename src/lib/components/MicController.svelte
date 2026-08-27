@@ -26,11 +26,12 @@
 			.trim();
 	}
 
-	function withoutOverlap(text: string): string {
-		const previous = appState.liveLines.at(-1)?.text ?? '';
+	function withoutOverlap(text: string, startS: number): string {
+		const previousLine = appState.liveLines.at(-1);
+		const previous = previousLine?.text ?? '';
 		const trimmedText = text.trim();
 		if (!previous || !trimmedText) return trimmedText;
-		if (previous === trimmedText) return '';
+		if (previous === trimmedText && previousLine && startS - previousLine.end_s < 1.5) return '';
 
 		const previousWords = previous.split(/\s+/).map(normalizeOverlapToken).filter(Boolean);
 		const currentWords = trimmedText.split(/\s+/).map(normalizeOverlapToken).filter(Boolean);
@@ -65,14 +66,14 @@
 	// this transcript.
 	$effect(() => {
 		let active = true;
-		LiveTranscriber.subscribeEvents((sid, text, startS, draft) => {
+		LiveTranscriber.subscribeEvents((sid, text, startS, endS, draft) => {
 			if (active && live && sid === live.sessionId) {
 				if (!draft) {
-					appState.liveLines = text.trim() ? [{ start_s: startS, text: text.trim() }] : [];
+					appState.liveLines = text.trim() ? [{ start_s: startS, end_s: endS, text: text.trim() }] : [];
 					return;
 				}
-				const cleaned = withoutOverlap(text);
-				if (cleaned) appState.liveLines = [...appState.liveLines, { start_s: startS, text: cleaned }];
+				const cleaned = withoutOverlap(text, startS);
+				if (cleaned) appState.liveLines = [...appState.liveLines, { start_s: startS, end_s: endS, text: cleaned }];
 			}
 		}).then((unsub) => {
 			if (!active) unsub();
@@ -120,7 +121,7 @@
 		try {
 			const settings =
 				appState.settings.model_size !== 'base'
-					? { ...appState.settings, model_size: 'base', device: 'cpu' as const }
+					? { ...appState.settings, model_size: 'base', device: 'cpu' as const, final_model_size: appState.settings.model_size }
 					: appState.settings;
 			live = new LiveTranscriber(settings);
 			await live.start();
@@ -135,7 +136,7 @@
 		try {
 			const finalResult = await live.stop();
 			if (finalResult) {
-				appState.liveLines = [{ start_s: 0, text: finalResult.text }];
+				appState.liveLines = [{ start_s: 0, end_s: finalResult.endS, text: finalResult.text }];
 			}
 			live = null;
 			mode = 'idle';

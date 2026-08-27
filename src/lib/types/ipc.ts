@@ -40,6 +40,7 @@ export interface TranscriptDocument {
 
 export interface Settings {
 	model_size: string;
+	final_model_size?: string | null;
 	language?: string | null;
 	live_chunk_seconds: number; // 3..5 seconds for live rolling chunks
 	device: Device;
@@ -56,6 +57,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
 	model_size: 'medium',
+	final_model_size: null,
 	language: null,
 	live_chunk_seconds: 4,
 	device: 'auto',
