@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
-      - run: pip install ruff mypy pytest -r requirements.txt
+      - run: pip install ruff mypy pytest httpx2 -r requirements.txt
       - run: ruff format --check .
       - run: ruff check .
       - run: mypy --strict core ipc           # strict scope grows per spec §3
@@ -39,6 +39,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx eslint src --max-warnings 0
+      - run: npx svelte-kit sync
       - run: npx svelte-check --fail-on-warnings
       - run: npm run build
 

@@ -201,9 +201,7 @@ async def ws_live(ws: WebSocket) -> None:
 
     async def transcribe(start: float, end: float, chunk: np.ndarray) -> None:
         try:
-            result = await asyncio.to_thread(
-                engine.transcribe_chunk, chunk, start, end, settings
-            )
+            result = await asyncio.to_thread(engine.transcribe_chunk, chunk, start, end, settings)
         except Exception as exc:  # noqa: BLE001 — a bad utterance must not kill the session
             logger.warning("live utterance %s..%s failed: %s", start, end, exc)
             bus.publish(

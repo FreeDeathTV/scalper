@@ -208,7 +208,7 @@ def test_live_segment_serializes_as_live_segment_over_events() -> None:
             )
             ev = await asyncio.wait_for(q.get(), timeout=2.0)
             frame = f"data: {json.dumps(ev.model_dump())}\n\n"  # mirrors main.py
-            payload = json.loads(frame[len("data:"):].strip())
+            payload = json.loads(frame[len("data:") :].strip())
             assert payload["event"] == "live_segment"
             assert payload["session_id"] == "live-abc"
             assert payload["start_s"] == 0.0
