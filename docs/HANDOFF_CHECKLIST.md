@@ -45,6 +45,7 @@ Status key: ☐ not started · ◐ partially done · ☑ done · ❌ blocked (no
 - ☐ Punctuation/casing restoration stage + toggle
 
 ## M5 — Live capture (system audio + mic)
+- **Detailed work plan:** [`LIVE_TRANSCRIPTION_IMPROVEMENT_PLAN.md`](LIVE_TRANSCRIPTION_IMPROVEMENT_PLAN.md)
 - ☑ System-audio loopback capture (webview `getDisplayMedia` → AudioWorklet 16 kHz PCM tap)
   *Additive feature lands ahead of M5: record-then-transcribe via POST /capture/upload reusing the
   batch pipeline, and a live path over /ws/live with energy-gated utterance segmentation (core/live.py).*
