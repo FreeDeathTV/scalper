@@ -1,4 +1,4 @@
-"""Backend entrypoint — loopback HTTP + SSE server (spec §5).
+"""Backend entrypoint â€” loopback HTTP + SSE server (spec Â§5).
 
 Run standalone:  uvicorn main:app --host 127.0.0.1 --port <random>
 Tauri sidecar spawns this via src-tauri/src/lib.rs; the chosen port is printed
@@ -50,7 +50,7 @@ app = FastAPI(title="scalper-transcriber-backend", version="0.1.0")
 
 # The webview is a different origin than the loopback sidecar (http://localhost:1420
 # in dev, http://tauri.localhost in the packaged Tauri window), so cross-origin
-# requests/SSE must be allowed explicitly. Local service only — safe.
+# requests/SSE must be allowed explicitly. Local service only â€” safe.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -146,7 +146,7 @@ async def jobs_cancel(payload: dict[str, object]) -> dict[str, object]:
 async def capture_upload(
     file: UploadFile = File(...), settings_json: str = Form("{}")
 ) -> JobCreated:
-    """System-audio capture recorded in the webview → batch pipeline.
+    """System-audio capture recorded in the webview â†’ batch pipeline.
 
     The client WAV-encodes its capture locally (16 kHz mono PCM) and POSTs it;
     the server persists it under the OS temp dir and runs the same stages as
@@ -251,7 +251,7 @@ async def ws_live(ws: WebSocket) -> None:
         async with transcription_lock:
             try:
                 result = await asyncio.to_thread(engine.transcribe_chunk, chunk, start, end, settings)
-            except Exception as exc:  # noqa: BLE001 — a bad utterance must not kill the session
+            except Exception as exc:  # noqa: BLE001 â€” a bad utterance must not kill the session
                 logger.warning("live utterance %s..%s failed: %s", start, end, exc)
                 bus.publish(
                     JobStatus(job_id=live_job, stage="error", message=f"transcription failed: {exc}")
@@ -280,9 +280,9 @@ async def ws_live(ws: WebSocket) -> None:
         )
         bus.publish(JobStatus(job_id=live_job, stage="listening", message=result.text[:80]))
 
-    async def finalize_capture() -> None:
+    async def finalize_capture() -> tuple[str, float] | None:
         if not captured_chunks or captured_samples == 0:
-            return
+            return None
         pcm = np.concatenate(captured_chunks) if len(captured_chunks) > 1 else captured_chunks[0]
         duration_s = captured_samples / 16_000
         logger.info(
@@ -293,13 +293,14 @@ async def ws_live(ws: WebSocket) -> None:
             settings.effective_device,
         )
         result = await asyncio.to_thread(engine.transcribe_chunk, pcm, 0.0, duration_s, settings)
-        if result.text.strip():
+        final_text = result.text.strip()
+        if final_text:
             bus.publish(
                 LiveTranscriptEvent(
                     session_id=session_id,
                     start_s=0.0,
                     end_s=duration_s,
-                    text=result.text.strip(),
+                    text=final_text,
                     draft=False,
                 )
             )
@@ -308,7 +309,7 @@ async def ws_live(ws: WebSocket) -> None:
             session_id,
             duration_s,
         )
-
+        return (final_text, duration_s) if final_text else None
     try:
         bus.publish(JobStatus(job_id=live_job, stage="listening", message="live session started"))
         while True:
@@ -339,8 +340,9 @@ async def ws_live(ws: WebSocket) -> None:
             if tail is not None:
                 queue_utterance(*tail)
         await finish_transcriptions(timeout=None)
+        final_result: tuple[str, float] | None = None
         if not cancelled:
-            await finalize_capture()
+            final_result = await finalize_capture()
         logger.info(
             "live timing session=%s phase=session-complete capture_s=%.3f "
             "elapsed_s=%.3f model=%s device=%s",
@@ -358,9 +360,12 @@ async def ws_live(ws: WebSocket) -> None:
             )
         )
         try:
-            await ws.send_json({"done": True, "session_id": session_id})
+            completion = {"done": True, "session_id": session_id}
+            if final_result is not None:
+                completion.update({"final_text": final_result[0], "final_end_s": final_result[1]})
+            await ws.send_json(completion)
             await ws.close()
-        except Exception:  # noqa: BLE001 — client may already be gone
+        except Exception:  # noqa: BLE001 â€” client may already be gone
             pass
     except WebSocketDisconnect:
         tail = buf.flush()

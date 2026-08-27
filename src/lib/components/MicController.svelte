@@ -133,7 +133,10 @@
 	async function stopLive(): Promise<void> {
 		if (!live) return;
 		try {
-			await live.stop();
+			const finalResult = await live.stop();
+			if (finalResult) {
+				appState.liveLines = [{ start_s: 0, text: finalResult.text }];
+			}
 			live = null;
 			mode = 'idle';
 		} catch (e) {
@@ -158,13 +161,13 @@
 	<h2>System audio</h2>
 	<div class="row">
 		{#if mode === 'idle'}
-			<button onclick={startRecording}>⏺ Record &amp; transcribe</button>
-			<button onclick={startLive}>▶ Live transcribe</button>
+			<button onclick={startRecording}>âº Record &amp; transcribe</button>
+			<button onclick={startLive}>â–¶ Live transcribe</button>
 		{:else if mode === 'recording'}
-			<button class="active" onclick={stopRecording}>⏹ Stop &amp; transcribe…</button>
+			<button class="active" onclick={stopRecording}>â¹ Stop &amp; transcribeâ€¦</button>
 		{:else}
-			<button class="active" onclick={stopLive}>⏹ Stop live session</button>
-			<button onclick={cancelLive}>✕ Cancel</button>
+			<button class="active" onclick={stopLive}>â¹ Stop live session</button>
+			<button onclick={cancelLive}>âœ• Cancel</button>
 		{/if}
 	</div>
 	{#if error}<p class="error">{error}</p>{/if}

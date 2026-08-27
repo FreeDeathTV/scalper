@@ -28,9 +28,9 @@ def _zeros(seconds: float) -> np.ndarray:
 def test_utterance_closes_after_hangover_silence():
     buf = UtteranceBuffer()
     assert buf.feed(_speech(1.5)) == []  # still open while speech runs
-    for _ in range(5):  # 5 x 100ms — below hangover 0.6
+    for _ in range(5):  # 5 x 100ms â€” below hangover 0.6
         assert buf.feed(_zeros(0.1)) == []
-    out = buf.feed(_zeros(0.1))  # cumulative silence hits 0.6 → close
+    out = buf.feed(_zeros(0.1))  # cumulative silence hits 0.6 â†’ close
     assert len(out) == 1
     start, end, pcm = out[0]
     assert start == 0.0
@@ -147,10 +147,12 @@ def test_ws_live_emits_draft_then_final_segment(
             ack = ws.receive_json()
             assert set(ack) == {"session_id"}
             ws.send_bytes(_speech(1.0).tobytes())
-            ws.send_bytes(_zeros(0.7).tobytes())  # crosses hangover → closes utterance
+            ws.send_bytes(_zeros(0.7).tobytes())  # crosses hangover â†’ closes utterance
             ws.send_json({"action": "stop"})
             done = ws.receive_json()
             assert done["done"] is True and done["session_id"] == ack["session_id"]
+            assert done["final_text"] == "hello world"
+            assert abs(done["final_end_s"] - 1.7) < 0.02
 
         events = [
             dict(
@@ -213,7 +215,7 @@ def test_cors_allows_webview_origin(client: TestClient) -> None:
 def test_live_segment_serializes_as_live_segment_over_events() -> None:
     """The frontend only renders SSE frames whose `event` is 'live_segment'.
     Assert the SSE serialization contract (json.dumps(model_dump())) emits that
-    discriminator with intact text/session_id/start_s — mirrors main.py /events.
+    discriminator with intact text/session_id/start_s â€” mirrors main.py /events.
 
     Single asyncio loop (asyncio.Queue is not thread-safe across loops), so we
     publish+drain on the same loop rather than over a concurrent TestClient SSE.

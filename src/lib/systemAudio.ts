@@ -1,11 +1,11 @@
 /**
- * System-audio (speaker loopback) capture — record-then-transcribe & live.
+ * System-audio (speaker loopback) capture â€” record-then-transcribe & live.
  *
  * Windows/WebView2 path: navigator.mediaDevices.getDisplayMedia({audio:true})
  * lets the user share system audio; we tap it through an AudioWorklet that
  * emits mono Float32 PCM already resampled to 16 kHz by the AudioContext.
  * Chromium-family browsers (including WebView2) honor sampleRate: 16000 here;
- * Firefox does not — surfaced as a readable error for the UI.
+ * Firefox does not â€” surfaced as a readable error for the UI.
  */
 
 import { readyBase } from '$lib/api';
@@ -34,7 +34,7 @@ export async function openSystemAudioStream(): Promise<MediaStream> {
 	});
 	stream.getVideoTracks().forEach((t) => t.stop()); // we only want audio
 	if (stream.getAudioTracks().length === 0) {
-		throw new Error('No audio track shared — tick "Share system audio" in the picker.');
+		throw new Error('No audio track shared â€” tick "Share system audio" in the picker.');
 	}
 	return stream;
 }
@@ -172,7 +172,7 @@ export class LiveTranscriber {
 	private enqueue(pcm: Float32Array): void {
 		this.pending.push(pcm);
 		this.pendingSamples += pcm.length;
-		if (this.pendingSamples >= TARGET_SR) this.flush(); // ≥1s backpressure guard
+		if (this.pendingSamples >= TARGET_SR) this.flush(); // â‰¥1s backpressure guard
 	}
 
 	private flush(): void {
@@ -214,17 +214,29 @@ export class LiveTranscriber {
 		return () => es.close();
 	}
 
-	async stop(): Promise<void> {
+	async stop(): Promise<{ text: string; endS: number } | null> {
 		if (this.flushTimer) clearInterval(this.flushTimer);
 		this.flush();
 		this.tapper?.stop();
 		this.stream?.getTracks().forEach((t) => t.stop());
+		let finalResult: { text: string; endS: number } | null = null;
 		await new Promise<void>((resolve) => {
 			if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return resolve();
+			this.ws.onmessage = (ev) => {
+				try {
+					const data = JSON.parse(ev.data as string) as { final_text?: string; final_end_s?: number };
+					if (data.final_text && typeof data.final_end_s === 'number') {
+						finalResult = { text: data.final_text, endS: data.final_end_s };
+					}
+				} catch {
+					/* ignore non-JSON completion frames */
+				}
+			};
 			this.ws.onclose = () => resolve();
 			this.ws.send(JSON.stringify({ action: 'stop' }));
 		});
 		this.ws = null;
+		return finalResult;
 	}
 
 	async cancel(): Promise<void> {
