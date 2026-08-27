@@ -30,7 +30,11 @@
 		};
 	});
 
-	const stageText = $derived(appState.job ? `${appState.job.stage} — ${Math.round(appState.job.progress * 100)}%` : 'idle');
+	const stageText = $derived(
+		appState.job
+			? `${appState.job.stage} — ${Math.round(appState.job.progress * 100)}%`
+			: 'idle'
+	);
 </script>
 
 <header>

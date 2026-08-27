@@ -20,6 +20,7 @@ class AppState {
 	health = $state<HealthReport | null>(null);
 	job = $state<JobStatus | null>(null);
 	transcript = $state<TranscriptDocument | null>(null);
+	liveLines = $state<{ start_s: number; text: string }[]>([]);
 	sidecarError = $state<string | null>(null);
 
 	saveSettings(update: Partial<Settings>): void {

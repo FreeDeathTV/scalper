@@ -198,16 +198,30 @@ async def ws_live(ws: WebSocket) -> None:
 
     buf = UtteranceBuffer()
     live_job = f"live-{session_id}"
+    transcription_lock = asyncio.Lock()
+    transcription_tasks: list[asyncio.Task[None]] = []
+
+    async def finish_transcriptions() -> None:
+        if not transcription_tasks:
+            return
+        try:
+            await asyncio.wait_for(asyncio.gather(*transcription_tasks), timeout=2.0)
+        except asyncio.TimeoutError:
+            logger.info("live session %s stopping with transcription still in progress", session_id)
+            for task in transcription_tasks:
+                if not task.done():
+                    task.cancel()
 
     async def transcribe(start: float, end: float, chunk: np.ndarray) -> None:
-        try:
-            result = await asyncio.to_thread(engine.transcribe_chunk, chunk, start, end, settings)
-        except Exception as exc:  # noqa: BLE001 — a bad utterance must not kill the session
-            logger.warning("live utterance %s..%s failed: %s", start, end, exc)
-            bus.publish(
-                JobStatus(job_id=live_job, stage="error", message=f"transcription failed: {exc}")
-            )
-            return
+        async with transcription_lock:
+            try:
+                result = await asyncio.to_thread(engine.transcribe_chunk, chunk, start, end, settings)
+            except Exception as exc:  # noqa: BLE001 — a bad utterance must not kill the session
+                logger.warning("live utterance %s..%s failed: %s", start, end, exc)
+                bus.publish(
+                    JobStatus(job_id=live_job, stage="error", message=f"transcription failed: {exc}")
+                )
+                return
         if not result.text.strip():
             return
         bus.publish(
@@ -234,11 +248,12 @@ async def ws_live(ws: WebSocket) -> None:
                 continue
             pcm = np.frombuffer(frame, dtype="<f4").astype(np.float32)
             for start, end, chunk in buf.feed(pcm):
-                await transcribe(start, end, chunk)
+                transcription_tasks.append(asyncio.create_task(transcribe(start, end, chunk)))
         # graceful stop: emit the tail utterance if any
         tail = buf.flush()
         if tail is not None:
-            await transcribe(*tail)
+            transcription_tasks.append(asyncio.create_task(transcribe(*tail)))
+        await finish_transcriptions()
         bus.publish(JobStatus(job_id=live_job, stage="done", message="live session ended"))
         try:
             await ws.send_json({"done": True, "session_id": session_id})
@@ -248,7 +263,8 @@ async def ws_live(ws: WebSocket) -> None:
     except WebSocketDisconnect:
         tail = buf.flush()
         if tail is not None:
-            await transcribe(*tail)
+            transcription_tasks.append(asyncio.create_task(transcribe(*tail)))
+        await finish_transcriptions()
 
 
 @app.get("/events")
@@ -268,3 +284,23 @@ async def events(request: Request) -> StreamingResponse:
 
 
 _TASKS: dict[int, asyncio.Task[None]] = {}
+
+
+async def _warm_live_model() -> None:
+    """Load the low-latency live model while the app is starting."""
+    from core.engines.faster_whisper_engine import FasterWhisperEngine
+
+    try:
+        await asyncio.to_thread(
+            FasterWhisperEngine().load,
+            Settings(model_size="base", device="cpu"),
+        )
+        logger.info("live model warmed: base (cpu)")
+    except Exception:
+        logger.exception("live model warmup failed; it will retry on first use")
+
+
+@app.on_event("startup")
+async def warm_live_model_on_startup() -> None:
+    task = asyncio.create_task(_warm_live_model())
+    _TASKS[id(task)] = task

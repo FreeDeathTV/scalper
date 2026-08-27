@@ -130,6 +130,11 @@ export class LiveTranscriber {
 	private pendingSamples = 0;
 	private flushTimer: ReturnType<typeof setInterval> | null = null;
 
+	/** Set once the server acks the init frame; used by callers to filter SSE
+	 * events so a stale/lingering session's utterances never leak into a new
+	 * one's transcript. */
+	sessionId: string | null = null;
+
 	constructor(private settingsJson: unknown) {}
 
 	async start(): Promise<void> {
@@ -142,6 +147,22 @@ export class LiveTranscriber {
 			this.ws.onerror = () => reject(new Error('sidecar live socket refused'));
 		});
 		this.ws!.send(JSON.stringify({ settings: this.settingsJson }));
+
+		this.sessionId = await new Promise<string>((resolve, reject) => {
+			if (!this.ws) return reject(new Error('socket closed before ack'));
+			const timer = setTimeout(() => reject(new Error('sidecar did not ack live session')), 5000);
+			this.ws.onmessage = (ev) => {
+				clearTimeout(timer);
+				try {
+					const data = JSON.parse(ev.data as string) as { session_id?: string };
+					if (data.session_id) resolve(data.session_id);
+					else reject(new Error('sidecar ack missing session_id'));
+				} catch (e) {
+					reject(e instanceof Error ? e : new Error(String(e)));
+				}
+			};
+		});
+		this.ws!.onmessage = null;
 
 		this.tapper = new PcmTapper();
 		await this.tapper.start(this.stream, (pcm) => this.enqueue(pcm));

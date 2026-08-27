@@ -2,6 +2,7 @@
 	import { appState } from '$lib/stores/appState.svelte';
 
 	const segments = $derived(appState.transcript?.segments ?? []);
+	const liveLines = $derived(appState.liveLines);
 
 	function fmt(t: number): string {
 		const m = Math.floor(t / 60);
@@ -17,7 +18,18 @@
 <section aria-label="Transcript">
 	<h2>Transcript</h2>
 	{#if segments.length === 0}
-		<p class="stage-label">No transcript yet — import a file to begin.</p>
+		{#if liveLines.length === 0}
+			<p class="stage-label">No transcript yet — import a file to begin.</p>
+		{:else}
+			<div role="list">
+				{#each liveLines as line, i (i)}
+					<div class="segment-row" role="listitem">
+						<span class="stage-label">{fmt(line.start_s)}</span>
+						<span>{line.text}</span>
+					</div>
+				{/each}
+			</div>
+		{/if}
 	{:else}
 		<div role="list">
 			{#each segments as seg, i (i)}

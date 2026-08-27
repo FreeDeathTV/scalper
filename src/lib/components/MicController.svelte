@@ -6,17 +6,22 @@
 	type Mode = 'idle' | 'recording' | 'live';
 	let mode = $state<Mode>('idle');
 	let error = $state<string | null>(null);
-	let liveLines = $state<{ start_s: number; text: string }[]>([]);
 	let recorder: SystemAudioRecorder | null = null;
 	let live: LiveTranscriber | null = null;
 	let unsubLive: (() => void) | null = null;
 
 	// Subscribe inside $effect so this only runs in the browser, never during
 	// SSR/prerender: EventSource is a browser global (matches +page.svelte).
+	// The sidecar broadcasts live_segment events for ALL sessions on the shared
+	// /events SSE stream (stray/lingering connections included), so we must
+	// filter by our own session id or a leftover session's audio bleeds into
+	// this transcript.
 	$effect(() => {
 		let active = true;
-		LiveTranscriber.subscribeEvents((_sid, text, startS) => {
-			if (active) liveLines = [...liveLines, { start_s: startS, text }];
+		LiveTranscriber.subscribeEvents((sid, text, startS) => {
+			if (active && live && sid === live.sessionId) {
+				appState.liveLines = [...appState.liveLines, { start_s: startS, text }];
+			}
 		}).then((unsub) => {
 			if (!active) unsub();
 			else unsubLive = unsub;
@@ -59,9 +64,13 @@
 
 	async function startLive(): Promise<void> {
 		error = null;
-		liveLines = [];
+		appState.liveLines = [];
 		try {
-			live = new LiveTranscriber(appState.settings);
+			const settings =
+				appState.settings.model_size !== 'base'
+					? { ...appState.settings, model_size: 'base', device: 'cpu' as const }
+					: appState.settings;
+			live = new LiveTranscriber(settings);
 			await live.start();
 			mode = 'live';
 		} catch (e) {
@@ -80,7 +89,6 @@
 		}
 	}
 
-	const fmtTime = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 </script>
 
 <section>
@@ -96,27 +104,10 @@
 		{/if}
 	</div>
 	{#if error}<p class="error">{error}</p>{/if}
-	{#if liveLines.length > 0}
-		<div class="live-out">
-			{#each liveLines as line, i (i)}
-				<p><span class="ts">{fmtTime(line.start_s)}</span> {line.text}</p>
-			{/each}
-		</div>
-	{/if}
 </section>
 
 <style>
 	.row { display: flex; gap: 0.5rem; }
 	.active { background: var(--accent, #b33); color: #fff; }
 	.error { color: #c0392b; font-size: 0.85rem; }
-	.live-out {
-		max-height: 12rem;
-		overflow-y: auto;
-		font-size: 0.9rem;
-		border-top: 1px solid #ddd;
-		margin-top: 0.5rem;
-		padding-top: 0.4rem;
-	}
-	.ts { color: #888; font-variant-numeric: tabular-nums; margin-right: 0.4rem; }
 </style>
-
