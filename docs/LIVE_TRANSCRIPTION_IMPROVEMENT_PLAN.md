@@ -15,6 +15,7 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 - [x] Live hard chunk limit reduced from 12 seconds to 6 seconds.
 - [ ] Live draft/final transcript behavior matches the development specification.
 - [ ] Live latency and memory behavior are measured with repeatable benchmarks.
+- [x] Optional language lock is available to stabilize recognition when auto-detection is unreliable.
 - [x] Transcript can be copied to the clipboard and cleared without resetting the app.
 
 ## Priority 1 — latency and responsiveness
@@ -63,7 +64,7 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 
 ### 5. Improve language and audio controls
 
-- [ ] Add an optional language selector, including an English lock.
+- [x] Add an optional language selector, including an English lock.
 - [ ] Show capture level and silence/audio-track diagnostics.
 - [ ] Detect and report near-silent or missing audio before starting ASR.
 - [ ] Add optional normalization and denoise for browser-captured audio.

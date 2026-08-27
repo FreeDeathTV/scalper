@@ -58,6 +58,7 @@ class TranscriptDocument(BaseModel):
 
 class Settings(BaseModel):
     model_size: str = "medium"
+    language: str | None = None
     device: Device = "auto"
     compute_type: ComputeType = "int8"
     denoise: bool = False

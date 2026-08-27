@@ -15,6 +15,7 @@
 	const translate = bind('translate_to_english');
 	const vadThreshold = bind('vad_threshold');
 	const modelSize = bind('model_size');
+	const language = bind('language');
 
 	const vocabText = $derived(appState.settings.custom_vocabulary.join(', '));
 	const minSpeakers = $derived(appState.settings.min_speakers ?? 2);
@@ -36,6 +37,13 @@
 			<option value="medium">medium</option>
 			<option value="small">small (faster)</option>
 			<option value="base">base (live drafts)</option>
+		</select>
+	</label>
+	<label class="field">Language
+		<select bind:value={language.value}>
+			<option value={null}>Automatic</option>
+			<option value="en">English</option>
+			<option value="ar">Arabic</option>
 		</select>
 	</label>
 	{#if h && !h.engines['faster-whisper']}

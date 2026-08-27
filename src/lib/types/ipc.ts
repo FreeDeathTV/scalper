@@ -40,6 +40,7 @@ export interface TranscriptDocument {
 
 export interface Settings {
 	model_size: string;
+	language?: string | null;
 	device: Device;
 	compute_type: ComputeType;
 	denoise: boolean;
@@ -54,6 +55,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
 	model_size: 'medium',
+	language: null,
 	device: 'auto',
 	compute_type: 'int8',
 	denoise: false,

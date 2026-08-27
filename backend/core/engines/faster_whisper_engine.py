@@ -81,6 +81,7 @@ class FasterWhisperEngine:
             segments, info = self._model.transcribe(
                 pcm,
                 task="translate" if settings.translate_to_english else "transcribe",
+                language=settings.language,
                 initial_prompt=initial_prompt,
                 word_timestamps=False,  # words come from the aligner stage (spec §4)
                 vad_filter=False,  # VAD already applied upstream — do NOT re-gate (§7.1)
@@ -102,6 +103,7 @@ class FasterWhisperEngine:
             segments, info = self._model.transcribe(
                 pcm,
                 task="translate" if settings.translate_to_english else "transcribe",
+                language=settings.language,
                 initial_prompt=initial_prompt,
                 word_timestamps=False,
                 vad_filter=False,
