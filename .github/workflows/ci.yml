@@ -39,6 +39,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx eslint src --max-warnings 0
+      - run: npx svelte-kit sync
       - run: npx svelte-check --fail-on-warnings
       - run: npm run build
 
