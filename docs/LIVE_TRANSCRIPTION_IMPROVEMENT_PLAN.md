@@ -31,7 +31,7 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 ### 2. Implement rolling live chunks
 
 - [ ] Replace the single hard-limit buffer with configurable 3–5 second rolling chunks.
-- [ ] Add 0.3–0.6 second overlap between adjacent chunks.
+- [x] Add 0.3–0.6 second overlap between adjacent chunks (0.5 seconds).
 - [ ] Add stable chunk/segment IDs.
 - [ ] Deduplicate repeated words at overlap boundaries.
 - [ ] Provide Fast, Balanced, and Quality latency presets.

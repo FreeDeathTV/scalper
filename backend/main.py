@@ -64,6 +64,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+LIVE_OVERLAP_S = 0.5
+
 
 @app.get("/health")
 async def health() -> HealthReport:
@@ -202,6 +204,7 @@ async def ws_live(ws: WebSocket) -> None:
     live_job = f"live-{session_id}"
     transcription_lock = asyncio.Lock()
     transcription_tasks: list[asyncio.Task[None]] = []
+    overlap_tail = np.empty(0, dtype=np.float32)
 
     async def finish_transcriptions() -> None:
         if not transcription_tasks:
@@ -213,6 +216,15 @@ async def ws_live(ws: WebSocket) -> None:
             for task in transcription_tasks:
                 if not task.done():
                     task.cancel()
+
+    def queue_utterance(start: float, end: float, chunk: np.ndarray) -> None:
+        nonlocal overlap_tail
+        overlap_samples = int(LIVE_OVERLAP_S * 16_000)
+        if overlap_tail.size:
+            chunk = np.concatenate((overlap_tail, chunk))
+            start = max(0.0, start - LIVE_OVERLAP_S)
+        transcription_tasks.append(asyncio.create_task(transcribe(start, end, chunk)))
+        overlap_tail = chunk[-overlap_samples:].copy()
 
     async def transcribe(start: float, end: float, chunk: np.ndarray) -> None:
         async with transcription_lock:
@@ -250,11 +262,11 @@ async def ws_live(ws: WebSocket) -> None:
                 continue
             pcm = np.frombuffer(frame, dtype="<f4").astype(np.float32)
             for start, end, chunk in buf.feed(pcm):
-                transcription_tasks.append(asyncio.create_task(transcribe(start, end, chunk)))
+                queue_utterance(start, end, chunk)
         # graceful stop: emit the tail utterance if any
         tail = buf.flush()
         if tail is not None:
-            transcription_tasks.append(asyncio.create_task(transcribe(*tail)))
+            queue_utterance(*tail)
         await finish_transcriptions()
         bus.publish(JobStatus(job_id=live_job, stage="done", message="live session ended"))
         try:
@@ -265,7 +277,7 @@ async def ws_live(ws: WebSocket) -> None:
     except WebSocketDisconnect:
         tail = buf.flush()
         if tail is not None:
-            transcription_tasks.append(asyncio.create_task(transcribe(*tail)))
+            queue_utterance(*tail)
         await finish_transcriptions()
 
 
