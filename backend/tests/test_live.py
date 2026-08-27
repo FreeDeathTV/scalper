@@ -66,6 +66,16 @@ def test_flush_emits_tail_only_with_speech():
     assert buf.flush() is None  # drained
 
 
+def test_live_chunk_setting_is_limited_to_three_to_five_seconds():
+    assert Settings().live_chunk_seconds == 4.0
+    assert Settings(live_chunk_seconds=3.0).live_chunk_seconds == 3.0
+    assert Settings(live_chunk_seconds=5.0).live_chunk_seconds == 5.0
+    with pytest.raises(ValueError):
+        Settings(live_chunk_seconds=2.9)
+    with pytest.raises(ValueError):
+        Settings(live_chunk_seconds=5.1)
+
+
 def test_absolute_timestamps_across_multiple_utterances():
     buf = UtteranceBuffer(hangover_s=0.4)
     stamps: list[tuple[float, float]] = []
@@ -82,6 +92,9 @@ def test_absolute_timestamps_across_multiple_utterances():
 class _FakeEngine:
     name = "fake"
 
+    def __init__(self) -> None:
+        self.calls: list[int] = []
+
     def available(self) -> bool:
         return True
 
@@ -92,12 +105,15 @@ class _FakeEngine:
     def transcribe_chunk(
         self, pcm: np.ndarray, start_s: float, end_s: float, settings: Settings, **kw: object
     ) -> AsrChunkResult:
+        self.calls.append(pcm.size)
         return AsrChunkResult(text="hello world", language="en", start_s=start_s, end_s=end_s)
 
 
 @pytest.fixture()
-def fake_engine(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(transcriber_mod, "get_engine", lambda settings: _FakeEngine())
+def fake_engine(monkeypatch: pytest.MonkeyPatch) -> _FakeEngine:
+    engine = _FakeEngine()
+    monkeypatch.setattr(transcriber_mod, "get_engine", lambda settings: engine)
+    return engine
 
 
 @pytest.fixture()
@@ -119,7 +135,9 @@ def _drain_bus(sub: object) -> list[object]:
             return found
 
 
-def test_ws_live_emits_live_segment(fake_engine: None, client: TestClient) -> None:
+def test_ws_live_emits_draft_then_final_segment(
+    fake_engine: _FakeEngine, client: TestClient
+) -> None:
     from main import bus
 
     sub = bus.subscribe("*")  # subscriber exists BEFORE publishing, like the real UI
@@ -135,18 +153,26 @@ def test_ws_live_emits_live_segment(fake_engine: None, client: TestClient) -> No
             assert done["done"] is True and done["session_id"] == ack["session_id"]
 
         events = [
-            dict(session_id=e.session_id, start_s=e.start_s, end_s=e.end_s, text=e.text)
+            dict(
+                session_id=e.session_id,
+                start_s=e.start_s,
+                end_s=e.end_s,
+                text=e.text,
+                draft=e.draft,
+            )
             for e in _drain_bus(sub)
             if hasattr(e, "session_id") and hasattr(e, "text")
         ]
     finally:
         bus.unsubscribe("*", sub)
-    assert len(events) == 1
-    seg = events[0]
-    assert seg["session_id"] == ack["session_id"]
-    assert seg["text"] == "hello world"
-    assert seg["start_s"] == 0.0
-    assert abs(seg["end_s"] - 1.7) < 0.02
+    assert len(events) == 2
+    assert events[0]["draft"] is True
+    assert events[1]["draft"] is False
+    assert all(seg["session_id"] == ack["session_id"] for seg in events)
+    assert all(seg["text"] == "hello world" for seg in events)
+    assert events[1]["start_s"] == 0.0
+    assert abs(events[1]["end_s"] - 1.7) < 0.02
+    assert fake_engine.calls == [int(1.7 * SR), int(1.7 * SR)]
 
 
 def test_upload_capture_returns_job(client: TestClient) -> None:

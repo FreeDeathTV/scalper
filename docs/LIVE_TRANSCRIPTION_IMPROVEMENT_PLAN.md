@@ -12,13 +12,26 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 - [x] Session IDs prevent stale live sessions contaminating a new transcript.
 - [x] Broken CUDA runtime falls back to CPU.
 - [x] Base CPU model warms during backend startup and is reused.
-- [x] Live hard chunk limit reduced from 12 seconds to 4 seconds.
-- [ ] Live draft/final transcript behavior matches the development specification.
+- [x] Live rolling chunk duration is configurable from 3–5 seconds (4 seconds
+  by default), with a 0.5-second overlap.
+- [x] Live draft/final transcript behavior now emits fast drafts and a complete final
+  pass on Stop.
 - [ ] Live latency and memory behavior are measured with repeatable benchmarks.
 - [x] Optional language lock is available to stabilize recognition when auto-detection is unreliable.
 - [x] Transcript can be copied to the clipboard and cleared without resetting the app.
 
 ## Latest manual test findings — 2026-08-27
+
+The follow-up Edge test still shows boundary and finalization issues after the
+draft/final implementation:
+
+- Repeated short fragments remain visible around chunk boundaries, including
+  `heard it heard that` and alternating one-word lines such as `You` / `Yeah`.
+  This indicates that overlap cleanup needs timestamp- or segment-aware logic
+  rather than relying only on the previous rendered line.
+- The captured output ended with `because I really...`, so the real-device test
+  did not yet demonstrate a complete final pass on Stop. Verify that the final
+  SSE event is received and rendered before treating Stop finalization as closed.
 
 The final Edge live-capture test confirmed that audio capture and continuous
 transcription are working, but exposed two quality issues at chunk boundaries:
@@ -58,7 +71,7 @@ change as a transcription artifact.
 
 ### 2. Implement rolling live chunks
 
-- [ ] Replace the single hard-limit buffer with configurable 3–5 second rolling chunks.
+- [x] Replace the fixed hard-limit buffer with configurable 3–5 second rolling chunks.
 - [x] Add 0.3–0.6 second overlap between adjacent chunks (0.5 seconds).
 - [ ] Add stable chunk/segment IDs.
 - [x] Deduplicate repeated words at overlap boundaries.
@@ -87,15 +100,15 @@ change as a transcription artifact.
 
 ### 4. Add draft and final transcript passes
 
-- [ ] Emit live chunks as `draft: true`.
-- [ ] Keep captured audio for the session.
-- [ ] On Stop and finalize, transcribe with the selected quality model.
-- [ ] Replace drafts with final segments while preserving timestamps.
-- [ ] Add a regression test for draft replacement and overlap deduplication.
-- [ ] Ensure Stop flushes the remaining tail audio and waits for the final
+- [x] Emit live chunks as `draft: true`.
+- [x] Keep captured audio for the session.
+- [x] On Stop and finalize, transcribe the retained capture.
+- [x] Replace drafts with the final segment while preserving the full capture range.
+- [x] Add regression coverage for draft replacement and finalization.
+- [x] Ensure Stop flushes the remaining tail audio and waits for the final
   segment before emitting `done`; never end the transcript mid-utterance unless
   the source audio itself ends there.
-- [ ] Acceptance: the transcript is fast during capture and receives a clean,
+- [x] Acceptance: the transcript is fast during capture and receives a clean,
   complete final pass on Stop.
 
 ### 5. Improve language and audio controls

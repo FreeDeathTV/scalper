@@ -46,8 +46,12 @@
 	// this transcript.
 	$effect(() => {
 		let active = true;
-		LiveTranscriber.subscribeEvents((sid, text, startS) => {
+		LiveTranscriber.subscribeEvents((sid, text, startS, draft) => {
 			if (active && live && sid === live.sessionId) {
+				if (!draft) {
+					appState.liveLines = text.trim() ? [{ start_s: startS, text: text.trim() }] : [];
+					return;
+				}
 				const cleaned = withoutOverlap(text);
 				if (cleaned) appState.liveLines = [...appState.liveLines, { start_s: startS, text: cleaned }];
 			}

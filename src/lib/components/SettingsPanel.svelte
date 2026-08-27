@@ -16,6 +16,7 @@
 	const vadThreshold = bind('vad_threshold');
 	const modelSize = bind('model_size');
 	const language = bind('language');
+	const liveChunkSeconds = bind('live_chunk_seconds');
 
 	const vocabText = $derived(appState.settings.custom_vocabulary.join(', '));
 	const minSpeakers = $derived(appState.settings.min_speakers ?? 2);
@@ -45,6 +46,9 @@
 			<option value="en">English</option>
 			<option value="ar">Arabic</option>
 		</select>
+	</label>
+	<label class="field">Live chunk length: {liveChunkSeconds.value.toFixed(1)}s
+		<input type="range" min="3" max="5" step="0.5" bind:value={liveChunkSeconds.value} />
 	</label>
 	{#if h && !h.engines['faster-whisper']}
 		<p class="stage-label">⚠ faster-whisper not installed in sidecar venv</p>

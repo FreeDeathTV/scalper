@@ -59,6 +59,7 @@ class TranscriptDocument(BaseModel):
 class Settings(BaseModel):
     model_size: str = "medium"
     language: str | None = None
+    live_chunk_seconds: float = Field(default=4.0, ge=3.0, le=5.0)
     device: Device = "auto"
     compute_type: ComputeType = "int8"
     denoise: bool = False
@@ -99,13 +100,14 @@ class JobStatus(BaseModel):
 
 
 class LiveTranscriptEvent(BaseModel):
-    """One completed utterance from a live capture session, via GET /events."""
+    """A live draft or final transcript update, via GET /events."""
 
     event: Literal["live_segment"] = "live_segment"
     session_id: str
     start_s: float  # absolute offset in the live stream
     end_s: float
     text: str
+    draft: bool = True
 
 
 class JobCreated(BaseModel):

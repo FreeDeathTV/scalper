@@ -50,10 +50,13 @@ Status key: ☐ not started · ◐ partially done · ☑ done · ❌ blocked (no
   *Additive feature lands ahead of M5: record-then-transcribe via POST /capture/upload reusing the
   batch pipeline, and a live path over /ws/live with energy-gated utterance segmentation (core/live.py).*
 - ☐ sounddevice mic capture at 16 kHz mono; ring buffer + backpressure policy documented
-- ☐ Draft stream every ~4 s (small model) flagged `draft:true`; live session uses faster-whisper directly behind per-utterance buffer
-- ☐ Final two-pass polish on stop (large model), diff-safe merge into UI
+- ☑ Draft stream uses configurable 3–5 second rolling chunks (4 seconds by default), flagged `draft:true`; live session uses faster-whisper directly behind the per-utterance buffer
+- ☑ Final live pass on stop: retained capture is re-transcribed and replaces drafts
+  before the `done` status is emitted. The final pass currently uses the live session
+  engine configuration; quality-model selection remains a follow-up.
 - ☐ Memory soak test: 30-min session, RSS flat (evidence in docs/BENCHMARKS.md)
-- ◐ Latest manual test: live capture works and normalized token overlap merging now handles punctuation, casing, and one-word repeats. Partial-word boundary cases and final mid-sentence output still need follow-up. See [`LIVE_TRANSCRIPTION_IMPROVEMENT_PLAN.md`](LIVE_TRANSCRIPTION_IMPROVEMENT_PLAN.md).
+- ◐ Latest manual test: live capture works and normalized token overlap merging now handles punctuation, casing, and one-word repeats. Partial-word boundary cases still need follow-up. Stop now performs a retained-audio final pass; real Edge confirmation remains outstanding. See [`LIVE_TRANSCRIPTION_IMPROVEMENT_PLAN.md`](LIVE_TRANSCRIPTION_IMPROVEMENT_PLAN.md).
+- ◐ Follow-up Edge test still observed repeated short boundary fragments (`heard it heard that`, `You` / `Yeah`) and output ending at `because I really...`. Confirm final-event delivery/rendering and add timestamp-aware deduplication before marking live quality complete.
 - ◐ Live timing diagnostics now log capture, queue, transcription duration, queue depth, model/device, and real-time factor; repeatable benchmark and UI-render timing remain.
 - ◐ Confirmed diarization fixture: the speaker changes at `Exactly.` in the latest manual transcript. Live speaker labeling remains unimplemented.
 

@@ -201,20 +201,26 @@ async def ws_live(ws: WebSocket) -> None:
 
     # Keep live results responsive; long uninterrupted speech is split into
     # shorter ASR chunks instead of waiting up to the batch-oriented default.
-    buf = UtteranceBuffer(max_utterance_s=4.0)
+    buf = UtteranceBuffer(max_utterance_s=settings.live_chunk_seconds)
     live_job = f"live-{session_id}"
     transcription_lock = asyncio.Lock()
     transcription_tasks: list[asyncio.Task[None]] = []
     overlap_tail = np.empty(0, dtype=np.float32)
+    captured_chunks: list[np.ndarray] = []
+    captured_samples = 0
     cancelled = False
     session_started = time.perf_counter()
     last_capture_at = session_started
 
-    async def finish_transcriptions() -> None:
+    async def finish_transcriptions(timeout: float | None = 2.0) -> None:
         if not transcription_tasks:
             return
         try:
-            await asyncio.wait_for(asyncio.gather(*transcription_tasks), timeout=2.0)
+            pending = asyncio.gather(*transcription_tasks)
+            if timeout is None:
+                await pending
+            else:
+                await asyncio.wait_for(pending, timeout=timeout)
         except asyncio.TimeoutError:
             logger.info("live session %s stopping with transcription still in progress", session_id)
             for task in transcription_tasks:
@@ -269,10 +275,39 @@ async def ws_live(ws: WebSocket) -> None:
             return
         bus.publish(
             LiveTranscriptEvent(
-                session_id=session_id, start_s=start, end_s=end, text=result.text.strip()
+                session_id=session_id, start_s=start, end_s=end, text=result.text.strip(), draft=True
             )
         )
         bus.publish(JobStatus(job_id=live_job, stage="listening", message=result.text[:80]))
+
+    async def finalize_capture() -> None:
+        if not captured_chunks or captured_samples == 0:
+            return
+        pcm = np.concatenate(captured_chunks) if len(captured_chunks) > 1 else captured_chunks[0]
+        duration_s = captured_samples / 16_000
+        logger.info(
+            "live timing session=%s phase=final-pass-start capture_s=%.3f model=%s device=%s",
+            session_id,
+            duration_s,
+            settings.model_size,
+            settings.effective_device,
+        )
+        result = await asyncio.to_thread(engine.transcribe_chunk, pcm, 0.0, duration_s, settings)
+        if result.text.strip():
+            bus.publish(
+                LiveTranscriptEvent(
+                    session_id=session_id,
+                    start_s=0.0,
+                    end_s=duration_s,
+                    text=result.text.strip(),
+                    draft=False,
+                )
+            )
+        logger.info(
+            "live timing session=%s phase=final-pass-complete capture_s=%.3f",
+            session_id,
+            duration_s,
+        )
 
     try:
         bus.publish(JobStatus(job_id=live_job, stage="listening", message="live session started"))
@@ -294,6 +329,8 @@ async def ws_live(ws: WebSocket) -> None:
                 continue
             last_capture_at = time.perf_counter()
             pcm = np.frombuffer(frame, dtype="<f4").astype(np.float32)
+            captured_chunks.append(pcm.copy())
+            captured_samples += pcm.size
             for start, end, chunk in buf.feed(pcm):
                 queue_utterance(start, end, chunk)
         if not cancelled:
@@ -301,7 +338,9 @@ async def ws_live(ws: WebSocket) -> None:
             tail = buf.flush()
             if tail is not None:
                 queue_utterance(*tail)
-        await finish_transcriptions()
+        await finish_transcriptions(timeout=None)
+        if not cancelled:
+            await finalize_capture()
         logger.info(
             "live timing session=%s phase=session-complete capture_s=%.3f "
             "elapsed_s=%.3f model=%s device=%s",

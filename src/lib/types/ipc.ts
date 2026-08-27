@@ -41,6 +41,7 @@ export interface TranscriptDocument {
 export interface Settings {
 	model_size: string;
 	language?: string | null;
+	live_chunk_seconds: number; // 3..5 seconds for live rolling chunks
 	device: Device;
 	compute_type: ComputeType;
 	denoise: boolean;
@@ -56,6 +57,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
 	model_size: 'medium',
 	language: null,
+	live_chunk_seconds: 4,
 	device: 'auto',
 	compute_type: 'int8',
 	denoise: false,
@@ -84,6 +86,7 @@ export interface LiveTranscriptEvent {
 	start_s: number; // absolute offset in the live stream
 	end_s: number;
 	text: string;
+	draft: boolean;
 }
 
 export interface HealthReport {
