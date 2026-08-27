@@ -10,15 +10,30 @@
 	let live: LiveTranscriber | null = null;
 	let unsubLive: (() => void) | null = null;
 
+	function normalizeOverlapToken(word: string): string {
+		return word
+			.normalize('NFKC')
+			.toLocaleLowerCase()
+			.replace(/[^\p{L}\p{N}]+/gu, '');
+	}
+
 	function withoutOverlap(text: string): string {
 		const previous = appState.liveLines.at(-1)?.text ?? '';
 		const previousWords = previous.trim().split(/\s+/);
 		const currentWords = text.trim().split(/\s+/);
 		const maxOverlap = Math.min(previousWords.length, currentWords.length);
-		for (let count = maxOverlap; count >= 2; count--) {
-			const suffix = previousWords.slice(-count).join(' ').toLowerCase();
-			const prefix = currentWords.slice(0, count).join(' ').toLowerCase();
-			if (suffix === prefix) return currentWords.slice(count).join(' ');
+		for (let count = maxOverlap; count >= 1; count--) {
+			const suffix = previousWords
+				.slice(-count)
+				.map(normalizeOverlapToken)
+				.join(' ');
+			const prefix = currentWords
+				.slice(0, count)
+				.map(normalizeOverlapToken)
+				.join(' ');
+			if (suffix && suffix === prefix) {
+				return currentWords.slice(count).join(' ').trim();
+			}
 		}
 		return text.trim();
 	}

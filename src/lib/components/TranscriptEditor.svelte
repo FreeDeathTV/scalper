@@ -4,6 +4,16 @@
 	const segments = $derived(appState.transcript?.segments ?? []);
 	const liveLines = $derived(appState.liveLines);
 	let copyState = $state<'idle' | 'copied' | 'failed'>('idle');
+	let expanded = $state(false);
+	let transcriptList = $state<HTMLDivElement | null>(null);
+
+	$effect(() => {
+		void liveLines.length;
+		void segments.length;
+		requestAnimationFrame(() => {
+			transcriptList?.scrollTo({ top: transcriptList.scrollHeight });
+		});
+	});
 
 	const transcriptText = $derived(
 		segments.length > 0
@@ -40,12 +50,19 @@
 <section aria-label="Transcript">
 	<div class="heading-row">
 		<h2>Transcript</h2>
-		{#if transcriptText}
-			<div class="actions">
+		<div class="actions">
+			<button
+				aria-expanded={expanded}
+				aria-label={expanded ? 'Collapse transcript' : 'Expand transcript'}
+				onclick={() => (expanded = !expanded)}
+			>
+				{expanded ? 'Collapse' : 'Expand'}
+			</button>
+			{#if transcriptText}
 				<button onclick={copyTranscript}>Copy</button>
 				<button onclick={clearTranscript}>Clear</button>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 	{#if copyState === 'copied'}<p class="stage-label">Copied to clipboard.</p>{/if}
 	{#if copyState === 'failed'}<p class="error">Could not copy transcript to clipboard.</p>{/if}
@@ -53,7 +70,7 @@
 		{#if liveLines.length === 0}
 			<p class="stage-label">No transcript yet — import a file to begin.</p>
 		{:else}
-			<div role="list">
+			<div bind:this={transcriptList} class:expanded class="transcript-list" role="list">
 				{#each liveLines as line, i (i)}
 					<div class="segment-row" role="listitem">
 						<span class="stage-label">{fmt(line.start_s)}</span>
@@ -63,7 +80,7 @@
 			</div>
 		{/if}
 	{:else}
-		<div role="list">
+		<div bind:this={transcriptList} class:expanded class="transcript-list" role="list">
 			{#each segments as seg, i (i)}
 				<div class="segment-row" role="listitem" title={`${fmt(seg.start)} → ${fmt(seg.end)}`}>
 					<span class="stage-label">{fmt(seg.start)}</span>
@@ -83,5 +100,7 @@
 <style>
 	.heading-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 	.actions { display: flex; gap: 0.4rem; }
+	.transcript-list { max-height: 50vh; overflow-y: auto; }
+	.transcript-list.expanded { max-height: none; overflow-y: visible; }
 	.error { color: #c0392b; font-size: 0.85rem; }
 </style>

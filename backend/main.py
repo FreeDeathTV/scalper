@@ -12,6 +12,7 @@ import json
 import logging
 import sys
 import tempfile
+import time
 import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -206,6 +207,8 @@ async def ws_live(ws: WebSocket) -> None:
     transcription_tasks: list[asyncio.Task[None]] = []
     overlap_tail = np.empty(0, dtype=np.float32)
     cancelled = False
+    session_started = time.perf_counter()
+    last_capture_at = session_started
 
     async def finish_transcriptions() -> None:
         if not transcription_tasks:
@@ -224,10 +227,21 @@ async def ws_live(ws: WebSocket) -> None:
         if overlap_tail.size:
             chunk = np.concatenate((overlap_tail, chunk))
             start = max(0.0, start - LIVE_OVERLAP_S)
+        logger.info(
+            "live timing session=%s phase=utterance-queued capture_s=%.3f "
+            "utterance_s=%.3f queue_depth=%d model=%s device=%s",
+            session_id,
+            end,
+            end - start,
+            len(transcription_tasks),
+            settings.model_size,
+            settings.effective_device,
+        )
         transcription_tasks.append(asyncio.create_task(transcribe(start, end, chunk)))
         overlap_tail = chunk[-overlap_samples:].copy()
 
     async def transcribe(start: float, end: float, chunk: np.ndarray) -> None:
+        queued_at = time.perf_counter()
         async with transcription_lock:
             try:
                 result = await asyncio.to_thread(engine.transcribe_chunk, chunk, start, end, settings)
@@ -237,6 +251,20 @@ async def ws_live(ws: WebSocket) -> None:
                     JobStatus(job_id=live_job, stage="error", message=f"transcription failed: {exc}")
                 )
                 return
+        completed_at = time.perf_counter()
+        transcription_s = completed_at - queued_at
+        logger.info(
+            "live timing session=%s phase=transcription-complete capture_s=%.3f "
+            "utterance_s=%.3f transcription_s=%.3f queue_depth=%d model=%s device=%s rtf=%.3f",
+            session_id,
+            end,
+            end - start,
+            transcription_s,
+            max(0, sum(not task.done() for task in transcription_tasks) - 1),
+            settings.model_size,
+            settings.effective_device,
+            transcription_s / max(end - start, 0.001),
+        )
         if not result.text.strip():
             return
         bus.publish(
@@ -264,6 +292,7 @@ async def ws_live(ws: WebSocket) -> None:
             frame = msg.get("bytes")
             if frame is None or len(frame) == 0:
                 continue
+            last_capture_at = time.perf_counter()
             pcm = np.frombuffer(frame, dtype="<f4").astype(np.float32)
             for start, end, chunk in buf.feed(pcm):
                 queue_utterance(start, end, chunk)
@@ -273,6 +302,15 @@ async def ws_live(ws: WebSocket) -> None:
             if tail is not None:
                 queue_utterance(*tail)
         await finish_transcriptions()
+        logger.info(
+            "live timing session=%s phase=session-complete capture_s=%.3f "
+            "elapsed_s=%.3f model=%s device=%s",
+            session_id,
+            max(0.0, last_capture_at - session_started),
+            time.perf_counter() - session_started,
+            settings.model_size,
+            settings.effective_device,
+        )
         bus.publish(
             JobStatus(
                 job_id=live_job,

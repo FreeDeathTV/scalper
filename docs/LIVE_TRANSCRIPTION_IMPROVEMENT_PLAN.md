@@ -12,18 +12,46 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 - [x] Session IDs prevent stale live sessions contaminating a new transcript.
 - [x] Broken CUDA runtime falls back to CPU.
 - [x] Base CPU model warms during backend startup and is reused.
-- [x] Live hard chunk limit reduced from 12 seconds to 6 seconds.
+- [x] Live hard chunk limit reduced from 12 seconds to 4 seconds.
 - [ ] Live draft/final transcript behavior matches the development specification.
 - [ ] Live latency and memory behavior are measured with repeatable benchmarks.
 - [x] Optional language lock is available to stabilize recognition when auto-detection is unreliable.
 - [x] Transcript can be copied to the clipboard and cleared without resetting the app.
 
+## Latest manual test findings — 2026-08-27
+
+The final Edge live-capture test confirmed that audio capture and continuous
+transcription are working, but exposed two quality issues at chunk boundaries:
+
+- Repeated boundary text is still present in some cases, including
+  `because because`, `about about`, `the only things ... the only things`, and
+  `that much ... that much`. The current frontend cleanup only removes an exact
+  repeated multi-word prefix and does not reliably handle punctuation, casing,
+  partial words, or one-word repetitions.
+- The final visible output ended mid-sentence after the last live chunk. Stop
+  behavior needs a reliable tail flush and finalization signal before reporting
+  completion.
+
+These findings should be reproduced with a continuous speech recording and
+added to regression fixtures before changing the overlap algorithm.
+
+Timing logs now record session start/completion, capture progress, utterance
+queueing, queue depth, model/device, transcription duration, and real-time
+factor. A repeatable benchmark and p50/p95 report are still required.
+
+The manual recording also provides a confirmed speaker boundary: in the
+sequence ending `...I'll give you a W Salary somewhere else. Don't worry
+about that. Exactly.`, the word `Exactly.` is spoken by a different speaker.
+Preserve this annotation as a diarization fixture rather than treating the
+change as a transcription artifact.
+
 ## Priority 1 — latency and responsiveness
 
 ### 1. Add live timing instrumentation
 
-- [ ] Record capture, utterance-close, queue, transcription-complete, and UI-render timestamps.
-- [ ] Expose queue depth, model/device, captured seconds, and real-time factor in diagnostics.
+- [x] Record capture, utterance-close, queue, and transcription-complete timestamps in backend diagnostics.
+- [x] Expose queue depth, model/device, captured seconds, and real-time factor in backend diagnostics.
+- [ ] Record UI-render timestamps in the browser diagnostics.
 - [ ] Add a benchmark command or fixture for a repeatable 60-second speech sample.
 - [ ] Acceptance: report p50/p95 result latency and real-time factor for Base, Small,
   and Medium on CPU and supported CUDA.
@@ -34,9 +62,13 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 - [x] Add 0.3–0.6 second overlap between adjacent chunks (0.5 seconds).
 - [ ] Add stable chunk/segment IDs.
 - [x] Deduplicate repeated words at overlap boundaries.
+- [x] Replace text-prefix cleanup with normalized token overlap merging that
+  handles punctuation, casing, and one-word repeats.
+- [ ] Extend overlap merging to partial-word and token/segment boundary cases.
 - [ ] Provide Fast, Balanced, and Quality latency presets.
 - [ ] Acceptance: Fast mode produces visible text within 3–5 seconds during continuous speech
-  without duplicated boundary text.
+  without duplicated boundary text, including the repeated-phrase cases listed
+  in the latest manual test findings.
 
 ### 3. Make Stop and Cancel distinct
 
@@ -60,7 +92,11 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 - [ ] On Stop and finalize, transcribe with the selected quality model.
 - [ ] Replace drafts with final segments while preserving timestamps.
 - [ ] Add a regression test for draft replacement and overlap deduplication.
-- [ ] Acceptance: the transcript is fast during capture and receives a clean final pass on Stop.
+- [ ] Ensure Stop flushes the remaining tail audio and waits for the final
+  segment before emitting `done`; never end the transcript mid-utterance unless
+  the source audio itself ends there.
+- [ ] Acceptance: the transcript is fast during capture and receives a clean,
+  complete final pass on Stop.
 
 ### 5. Improve language and audio controls
 
@@ -69,6 +105,16 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 - [ ] Detect and report near-silent or missing audio before starting ASR.
 - [ ] Add optional normalization and denoise for browser-captured audio.
 - [ ] Compare WER for automatic language detection versus a forced language.
+
+### 5a. Add speaker diarization to live sessions
+
+- [ ] Use the confirmed `Exactly.` boundary as a labelled two-speaker fixture.
+- [ ] Run voice-embedding diarization over retained live audio, rather than
+  inferring speakers from pitch alone.
+- [ ] Map diarization turns onto live transcript timestamps and render stable
+  `Speaker 1` / `Speaker 2` labels.
+- [ ] Acceptance: the known speaker change at `Exactly.` is detected without
+  introducing duplicate or missing transcript text.
 
 ## Priority 3 — device and model reliability
 

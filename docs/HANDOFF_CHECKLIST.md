@@ -53,6 +53,9 @@ Status key: ☐ not started · ◐ partially done · ☑ done · ❌ blocked (no
 - ☐ Draft stream every ~4 s (small model) flagged `draft:true`; live session uses faster-whisper directly behind per-utterance buffer
 - ☐ Final two-pass polish on stop (large model), diff-safe merge into UI
 - ☐ Memory soak test: 30-min session, RSS flat (evidence in docs/BENCHMARKS.md)
+- ◐ Latest manual test: live capture works and normalized token overlap merging now handles punctuation, casing, and one-word repeats. Partial-word boundary cases and final mid-sentence output still need follow-up. See [`LIVE_TRANSCRIPTION_IMPROVEMENT_PLAN.md`](LIVE_TRANSCRIPTION_IMPROVEMENT_PLAN.md).
+- ◐ Live timing diagnostics now log capture, queue, transcription duration, queue depth, model/device, and real-time factor; repeatable benchmark and UI-render timing remain.
+- ◐ Confirmed diarization fixture: the speaker changes at `Exactly.` in the latest manual transcript. Live speaker labeling remains unimplemented.
 
 ## M6 — Packaging & benchmarks
 - ☐ Windows NSIS installer, code signing config stubbed for CI secrets
