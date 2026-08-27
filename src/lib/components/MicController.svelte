@@ -17,25 +17,44 @@
 			.replace(/[^\p{L}\p{N}]+/gu, '');
 	}
 
+	function normalizeOverlapText(value: string): string {
+		return value
+			.normalize('NFKC')
+			.toLocaleLowerCase()
+			.replace(/[\p{P}\p{S}]+/gu, ' ')
+			.replace(/\s+/g, ' ')
+			.trim();
+	}
+
 	function withoutOverlap(text: string): string {
 		const previous = appState.liveLines.at(-1)?.text ?? '';
-		const previousWords = previous.trim().split(/\s+/);
-		const currentWords = text.trim().split(/\s+/);
-		const maxOverlap = Math.min(previousWords.length, currentWords.length);
-		for (let count = maxOverlap; count >= 1; count--) {
-			const suffix = previousWords
-				.slice(-count)
-				.map(normalizeOverlapToken)
-				.join(' ');
-			const prefix = currentWords
-				.slice(0, count)
-				.map(normalizeOverlapToken)
-				.join(' ');
+		const trimmedText = text.trim();
+		if (!previous || !trimmedText) return trimmedText;
+		if (previous === trimmedText) return '';
+
+		const previousWords = previous.split(/\s+/).map(normalizeOverlapToken).filter(Boolean);
+		const currentWords = trimmedText.split(/\s+/).map(normalizeOverlapToken).filter(Boolean);
+		const maxWords = Math.min(previousWords.length, currentWords.length);
+		for (let count = maxWords; count >= 1; count--) {
+			const suffix = previousWords.slice(-count).join(' ');
+			const prefix = currentWords.slice(0, count).join(' ');
 			if (suffix && suffix === prefix) {
 				return currentWords.slice(count).join(' ').trim();
 			}
 		}
-		return text.trim();
+
+		const previousText = normalizeOverlapText(previous);
+		const currentText = normalizeOverlapText(trimmedText);
+		if (!previousText || !currentText) return trimmedText;
+		const maxChars = Math.min(previousText.length, currentText.length);
+		for (let count = maxChars; count >= 1; count--) {
+			const suffix = previousText.slice(-count);
+			const prefix = currentText.slice(0, count);
+			if (suffix && suffix === prefix) {
+				return currentText.slice(count).trim();
+			}
+		}
+		return trimmedText;
 	}
 
 	// Subscribe inside $effect so this only runs in the browser, never during
