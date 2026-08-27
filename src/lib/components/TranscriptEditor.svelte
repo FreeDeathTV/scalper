@@ -3,6 +3,28 @@
 
 	const segments = $derived(appState.transcript?.segments ?? []);
 	const liveLines = $derived(appState.liveLines);
+	let copyState = $state<'idle' | 'copied' | 'failed'>('idle');
+
+	const transcriptText = $derived(
+		segments.length > 0
+			? segments.map((segment) => segment.text).join('\n')
+			: liveLines.map((line) => line.text).join('\n')
+	);
+
+	async function copyTranscript(): Promise<void> {
+		try {
+			await navigator.clipboard.writeText(transcriptText);
+			copyState = 'copied';
+		} catch {
+			copyState = 'failed';
+		}
+	}
+
+	function clearTranscript(): void {
+		appState.transcript = null;
+		appState.liveLines = [];
+		copyState = 'idle';
+	}
 
 	function fmt(t: number): string {
 		const m = Math.floor(t / 60);
@@ -16,7 +38,17 @@
 </script>
 
 <section aria-label="Transcript">
-	<h2>Transcript</h2>
+	<div class="heading-row">
+		<h2>Transcript</h2>
+		{#if transcriptText}
+			<div class="actions">
+				<button onclick={copyTranscript}>Copy</button>
+				<button onclick={clearTranscript}>Clear</button>
+			</div>
+		{/if}
+	</div>
+	{#if copyState === 'copied'}<p class="stage-label">Copied to clipboard.</p>{/if}
+	{#if copyState === 'failed'}<p class="error">Could not copy transcript to clipboard.</p>{/if}
 	{#if segments.length === 0}
 		{#if liveLines.length === 0}
 			<p class="stage-label">No transcript yet — import a file to begin.</p>
@@ -47,3 +79,9 @@
 		</div>
 	{/if}
 </section>
+
+<style>
+	.heading-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+	.actions { display: flex; gap: 0.4rem; }
+	.error { color: #c0392b; font-size: 0.85rem; }
+</style>

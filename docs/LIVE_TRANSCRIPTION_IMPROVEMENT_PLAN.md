@@ -15,6 +15,7 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 - [x] Live hard chunk limit reduced from 12 seconds to 6 seconds.
 - [ ] Live draft/final transcript behavior matches the development specification.
 - [ ] Live latency and memory behavior are measured with repeatable benchmarks.
+- [x] Transcript can be copied to the clipboard and cleared without resetting the app.
 
 ## Priority 1 — latency and responsiveness
 
@@ -45,6 +46,11 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 - [ ] Add a regression test proving immediate cancellation completes within one second.
 
 ## Priority 2 — accuracy and transcript behavior
+
+### 3. Transcript usability
+
+- [x] Add Copy transcript control for live and batch text.
+- [x] Add Clear transcript control without resetting capture/settings state.
 
 ### 4. Add draft and final transcript passes
 
@@ -113,4 +119,3 @@ cd ..
 npm run check
 npm run lint
 ```
-
