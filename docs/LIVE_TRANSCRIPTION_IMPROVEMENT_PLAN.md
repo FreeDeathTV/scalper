@@ -40,10 +40,10 @@ in a focused commit or pull request, with tests and evidence recorded in the PR.
 
 ### 3. Make Stop and Cancel distinct
 
-- [ ] Stop accepting audio immediately when the user presses Stop.
-- [ ] Add “Stop and finalize” behavior separately from immediate cancellation.
-- [ ] Cancel queued chunks without waiting for unrelated work.
-- [ ] Emit `cancelled` for immediate cancellation and `done` only after finalization.
+- [x] Stop accepting audio immediately when the user presses Stop.
+- [x] Add “Stop and finalize” behavior separately from immediate cancellation.
+- [x] Cancel queued chunks without waiting for unrelated work.
+- [x] Emit `cancelled` for immediate cancellation and `done` only after finalization.
 - [ ] Add a regression test proving immediate cancellation completes within one second.
 
 ## Priority 2 — accuracy and transcript behavior

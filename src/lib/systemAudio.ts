@@ -225,5 +225,17 @@ export class LiveTranscriber {
 		});
 		this.ws = null;
 	}
-}
 
+	async cancel(): Promise<void> {
+		if (this.flushTimer) clearInterval(this.flushTimer);
+		this.tapper?.stop();
+		this.stream?.getTracks().forEach((t) => t.stop());
+		await new Promise<void>((resolve) => {
+			if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return resolve();
+			this.ws.onclose = () => resolve();
+			this.ws.send(JSON.stringify({ action: 'cancel' }));
+			setTimeout(resolve, 1000);
+		});
+		this.ws = null;
+	}
+}

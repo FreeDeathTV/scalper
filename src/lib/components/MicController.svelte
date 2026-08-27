@@ -103,6 +103,17 @@
 		}
 	}
 
+	async function cancelLive(): Promise<void> {
+		if (!live) return;
+		try {
+			await live.cancel();
+			live = null;
+			mode = 'idle';
+		} catch (e) {
+			fail(e);
+		}
+	}
+
 </script>
 
 <section>
@@ -115,6 +126,7 @@
 			<button class="active" onclick={stopRecording}>⏹ Stop &amp; transcribe…</button>
 		{:else}
 			<button class="active" onclick={stopLive}>⏹ Stop live session</button>
+			<button onclick={cancelLive}>✕ Cancel</button>
 		{/if}
 	</div>
 	{#if error}<p class="error">{error}</p>{/if}

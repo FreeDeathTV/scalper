@@ -205,6 +205,7 @@ async def ws_live(ws: WebSocket) -> None:
     transcription_lock = asyncio.Lock()
     transcription_tasks: list[asyncio.Task[None]] = []
     overlap_tail = np.empty(0, dtype=np.float32)
+    cancelled = False
 
     async def finish_transcriptions() -> None:
         if not transcription_tasks:
@@ -254,6 +255,9 @@ async def ws_live(ws: WebSocket) -> None:
             text_frame = msg.get("text")
             if text_frame is not None:
                 data = json.loads(text_frame)
+                if data.get("action") == "cancel":
+                    cancelled = True
+                    break
                 if data.get("action") == "stop":
                     break
                 continue
@@ -263,12 +267,19 @@ async def ws_live(ws: WebSocket) -> None:
             pcm = np.frombuffer(frame, dtype="<f4").astype(np.float32)
             for start, end, chunk in buf.feed(pcm):
                 queue_utterance(start, end, chunk)
-        # graceful stop: emit the tail utterance if any
-        tail = buf.flush()
-        if tail is not None:
-            queue_utterance(*tail)
+        if not cancelled:
+            # graceful stop: emit the tail utterance if any
+            tail = buf.flush()
+            if tail is not None:
+                queue_utterance(*tail)
         await finish_transcriptions()
-        bus.publish(JobStatus(job_id=live_job, stage="done", message="live session ended"))
+        bus.publish(
+            JobStatus(
+                job_id=live_job,
+                stage="cancelled" if cancelled else "done",
+                message="live session cancelled" if cancelled else "live session ended",
+            )
+        )
         try:
             await ws.send_json({"done": True, "session_id": session_id})
             await ws.close()
